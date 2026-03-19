@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tesserine CAA – EduTechLab</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <span class="logo">🗣️</span>
+      <div>
+        <h1>Tesserine CAA</h1>
+        <p>Genera fogli A4 con pittogrammi ARASAAC — stampa, ritaglia, incolla sul quaderno</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ── FORM ─────────────────────────────────────────────────────── -->
+    <section class="card form-card">
+      <h2>Inserisci il testo</h2>
+
+      <label for="txt-input">Frase o testo (qualsiasi maiuscolo/minuscolo):</label>
+      <textarea id="txt-input" rows="4"
+        placeholder="IL BAMBINO MANGIA LA MELA ROSSA&#10;LA MAESTRA LEGGE UN LIBRO"></textarea>
+
+      <div class="row options">
+        <div class="opt">
+          <label for="sel-cols">Colonne</label>
+          <select id="sel-cols">
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+        <div class="opt">
+          <label for="sel-rows">Righe</label>
+          <select id="sel-rows">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+        <div class="opt">
+          <label for="sel-size">Tessera (PDF)</label>
+          <select id="sel-size">
+            <option value="40">4 × 4 cm</option>
+            <option value="45" selected>4.5 × 4.5 cm</option>
+            <option value="50">5 × 5 cm</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="check-label">
+        <input type="checkbox" id="chk-stopwords" checked />
+        Rimuovi articoli, pronomi e preposizioni
+      </label>
+
+      <button id="btn-generate" class="btn primary">
+        🔍 Genera Tesserine CAA
+      </button>
+    </section>
+
+    <!-- ── STATO ─────────────────────────────────────────────────────── -->
+    <div id="status" class="status hidden"></div>
+
+    <!-- ── ANTEPRIMA ─────────────────────────────────────────────────── -->
+    <section id="sec-preview" class="card hidden">
+
+      <div class="preview-toolbar">
+        <h2>Anteprima
+          (<span id="lbl-count">0</span> tessere —
+          <span id="lbl-pages">1</span> pagina/e)
+        </h2>
+        <div class="toolbar-actions">
+          <button id="btn-export-dict" class="btn secondary small">⬇ Esporta dizionario</button>
+          <label class="btn secondary small" style="cursor:pointer;">
+            ⬆ Importa dizionario
+            <input type="file" id="file-import-dict" accept=".json" hidden />
+          </label>
+          <button id="btn-pdf" class="btn primary">🖨️ Scarica PDF</button>
+        </div>
+      </div>
+
+      <p class="hint">💡 Clicca su una tessera per scegliere un pittogramma alternativo.</p>
+
+      <!-- Le pagine A4 vengono iniettate qui da app.js -->
+      <div id="pages-container"></div>
+
+    </section>
+
+  </main>
+
+  <!-- ── MODAL ALTERNATIVA ─────────────────────────────────────────── -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>Pittogramma per: <span id="modal-word"></span></h3>
+      <div id="modal-alternatives" class="alternatives-grid"></div>
+      <button id="modal-close" class="btn secondary">✕ Chiudi</button>
+    </div>
+  </div>
+
+  <footer>
+    Pittogrammi:
+    <a href="https://arasaac.org" target="_blank" rel="noopener">ARASAAC</a>
+    © Gobierno de Aragón –
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a>
+    | <a href="https://edutechlab.it" target="_blank" rel="noopener">EduTechLab</a> – Fabio Rizzotto
+  </footer>
+
+  <!-- jsPDF (client-side PDF, nessun backend necessario) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+          integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfYzoDehtHnA=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <!-- App (ES modules — richiede server HTTP, non funziona con file://) -->
+  <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
