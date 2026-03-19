@@ -455,6 +455,22 @@ async function handleExportPDF() {
   btnPdf.disabled = true;
   showStatus('⏳ Generazione PDF in corso…');
 
+  try {
+    await generatePDF();
+  } catch (err) {
+    console.error('[PDF]', err);
+    showStatus('❌ Errore PDF: ' + err.message + ' — Ricarica la pagina e riprova.', 'error');
+  } finally {
+    btnPdf.disabled = false;
+  }
+}
+
+async function generatePDF() {
+  // Verifica che jsPDF sia caricato
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    throw new Error('Libreria jsPDF non caricata. Verifica la connessione Internet.');
+  }
+
   const { cols, rows } = currentOptions;
   const { jsPDF }      = window.jspdf;
 
@@ -553,9 +569,8 @@ async function handleExportPDF() {
     );
   }
 
-  doc.save('tesserine-caa.pdf');
+  doc.save('caartella.pdf');
   showStatus('✅ PDF scaricato!', 'success');
-  btnPdf.disabled = false;
 }
 
 /** Disegna un segnaposto testuale quando l'immagine non è disponibile. */

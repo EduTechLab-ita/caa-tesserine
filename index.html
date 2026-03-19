@@ -86,6 +86,12 @@
           <li><b>⬇ Esporta dizionario</b> — salva un file JSON con pittogrammi scelti + immagini personalizzate. Condividilo con le colleghe su Google Drive o WhatsApp.</li>
           <li><b>⬆ Importa dizionario</b> — carica il file condiviso: ricevi subito tutti i pittogrammi e le immagini personalizzate della collega.</li>
         </ul>
+        <p style="background:#fef9c3;border-left:3px solid #eab308;padding:0.5rem 0.7rem;border-radius:4px;margin-top:0.5rem;font-size:0.85rem;">
+          ⚠️ <b>Attenzione:</b> il dizionario è salvato <b>solo su questo browser</b>, su questa macchina.
+          Se cancelli la cache del browser, cambi PC o usi un altro browser, il dizionario va perso.
+          <b>Esporta regolarmente il file JSON</b> e tienilo in Google Drive come backup.
+          Puoi reimportarlo in qualsiasi momento per ritrovare tutte le scelte fatte.
+        </p>
       </div>
 
       <div class="info-section">
@@ -218,10 +224,8 @@
     | <a href="https://edutechlab.it" target="_blank" rel="noopener">EduTechLab</a> – Fabio Rizzotto
   </footer>
 
-  <!-- jsPDF (client-side PDF, nessun backend necessario) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-          integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfYzoDehtHnA=="
-          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- jsPDF (client-side PDF, nessun backend necessario) — SRI rimosso intenzionalmente -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <!-- App (ES modules — richiede server HTTP, non funziona con file://) -->
   <script type="module" src="js/app.js"></script>
