@@ -29,7 +29,18 @@ body {
   margin: 0 auto;
 }
 
-.logo { font-size: 2.4rem; }
+.logo {
+  font-size: 2rem;
+  background: rgba(255,255,255,0.18);
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 4px rgba(255,255,255,0.5));
+}
 .by-line {
   font-size: 0.78rem;
   opacity: 0.7;
