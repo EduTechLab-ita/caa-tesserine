@@ -3,7 +3,7 @@
 //  ⚙️  Aggiorna CACHE_NAME ad ogni deploy per forzare il refresh
 // ══════════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'caa-tesserine-v1.0';
+const CACHE_NAME = 'caa-tesserine-v1.1';
 
 const STATIC_ASSETS = [
   './',
@@ -13,6 +13,7 @@ const STATIC_ASSETS = [
   './js/dictionary.js',
   './js/parser.js',
   './js/arasaac.js',
+  './js/lemmatizer.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',

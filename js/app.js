@@ -10,11 +10,19 @@ import {
 import { parseText }                                    from './parser.js';
 import { searchPictograms, getPictogramUrl,
          fetchImageAsDataURL }                          from './arasaac.js';
+import { getCandidates }                                from './lemmatizer.js';
 
 // ── Stato globale ──────────────────────────────────────────────
 let dictionary     = loadDictionary();
-/** @type {Array<{word:string, id:number|null, imageUrl:string|null, dataURL:string|null, alts:Array}>} */
+/**
+ * @type {Array<{
+ *   word:string, id:number|null, imageUrl:string|null, dataURL:string|null,
+ *   alts:Array, lemma:string|null  // lemma: forma base usata per la ricerca (null = stessa parola)
+ * }>}
+ */
 let tiles          = [];
+/** Parole che sono state lemmatizzate: {ORIGINALE → lemma} */
+let lemmaLog       = {};
 let currentOptions = { cols: 4, rows: 5, tileSize: 45 };
 
 // ── Riferimenti DOM ────────────────────────────────────────────
@@ -70,7 +78,8 @@ async function handleGenerate() {
 
   btnGenerate.disabled = true;
   secPreview.classList.add('hidden');
-  tiles = [];
+  tiles    = [];
+  lemmaLog = {};
 
   let ok = 0, fail = 0;
 
@@ -80,14 +89,35 @@ async function handleGenerate() {
     showStatus(`⏳ (${i + 1}/${words.length}) Cerco pittogramma per: ${word}…`);
 
     const savedId = lookupWord(dictionary, word);
-    let id   = savedId;
-    let alts = [];
+    let id    = savedId;
+    let alts  = [];
+    let lemma = null;   // forma base usata se diversa da word
 
     if (!savedId) {
       try {
+        // 1. Prova la parola originale
         alts = await searchPictograms(word);
+
+        // 2. Se non trovata, prova i candidati lemmatizzati
+        if (alts.length === 0) {
+          const candidates = getCandidates(word);
+          for (const candidate of candidates) {
+            showStatus(`⏳ (${i + 1}/${words.length}) "${word}" non trovata — provo: ${candidate}…`);
+            try {
+              const candidateAlts = await searchPictograms(candidate);
+              if (candidateAlts.length > 0) {
+                alts  = candidateAlts;
+                lemma = candidate;           // segna che abbiamo usato la forma base
+                lemmaLog[word] = candidate;  // per il riepilogo finale
+                break;
+              }
+            } catch { /* prossimo candidato */ }
+          }
+        }
+
         if (alts.length > 0) {
           id         = alts[0].id;
+          // Salva nel dizionario la parola ORIGINALE → id (così la prossima volta non cerca di nuovo)
           dictionary = rememberWord(dictionary, word, id);
         }
       } catch (e) {
@@ -111,6 +141,7 @@ async function handleGenerate() {
       imageUrl: id ? getPictogramUrl(id) : null,
       dataURL:  null,
       alts,
+      lemma,
     });
   }
 
@@ -132,9 +163,17 @@ async function handleGenerate() {
 
   renderPages();
 
-  const msg = fail > 0
-    ? `✅ Completato! ${ok} tessere con pittogramma, ${fail} parole non trovate (❓).`
+  // ── Componi messaggio di riepilogo ────────────────────────────
+  const lemmaEntries = Object.entries(lemmaLog);
+  let msg = fail > 0
+    ? `✅ Completato! ${ok} tessere OK, ${fail} parole senza pittogramma (❓).`
     : `✅ Completato! ${words.length} tessere generate.`;
+
+  if (lemmaEntries.length > 0) {
+    const list = lemmaEntries.map(([orig, base]) => `${orig} → ${base}`).join(', ');
+    msg += `\n📝 Forma base usata per: ${list}`;
+  }
+
   showStatus(msg, 'success');
 
   btnGenerate.disabled = false;
@@ -215,6 +254,15 @@ function buildTileElement(tile) {
   const wordEl = document.createElement('div');
   wordEl.className   = 'tile-word';
   wordEl.textContent = tile.word;
+
+  // Se è stata usata la forma base (lemma), mostra un piccolo badge
+  if (tile.lemma) {
+    const badge = document.createElement('span');
+    badge.className = 'lemma-badge';
+    badge.title     = `Trovato come: "${tile.lemma}"`;
+    badge.textContent = '≈';
+    el.appendChild(badge);
+  }
 
   el.appendChild(imgWrap);
   el.appendChild(wordEl);
