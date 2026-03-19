@@ -357,6 +357,69 @@ footer {
 footer a { color: #7c3aed; text-decoration: none; }
 footer a:hover { text-decoration: underline; }
 
+/* ── PULSANTE INFO NELL'HEADER ────────────────────────────────── */
+.btn-info {
+  margin-left: auto;
+  background: rgba(255,255,255,0.18);
+  color: white;
+  border: 2px solid rgba(255,255,255,0.45);
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.btn-info:hover { background: rgba(255,255,255,0.32); }
+
+/* ── PANNELLO INFO ─────────────────────────────────────────────── */
+.info-modal {
+  max-width: 560px;
+  width: min(94vw, 560px);
+}
+
+.info-modal h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1.1rem;
+  color: #4f46e5;
+}
+
+.info-section {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.info-section:last-of-type { border-bottom: none; }
+
+.info-section h4 {
+  font-size: 0.95rem;
+  color: #334155;
+  margin-bottom: 0.35rem;
+}
+
+.info-section p, .info-section li {
+  font-size: 0.88rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.info-section ul {
+  margin: 0.3rem 0 0.3rem 1.2rem;
+}
+
+.info-section li { margin-bottom: 0.2rem; }
+
+.info-license {
+  background: #f8fafc;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.82rem !important;
+}
+
+.info-license a { color: #7c3aed; }
+
 /* ── RESPONSIVE ───────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .site-header { padding: 1rem; }

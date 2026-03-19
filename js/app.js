@@ -19,6 +19,8 @@ let currentOptions = { cols: 4, rows: 5, tileSize: 45 };
 
 // ── Riferimenti DOM ────────────────────────────────────────────
 const $ = id => document.getElementById(id);
+const openInfo  = () => $('info-overlay').classList.remove('hidden');
+const closeInfo = () => $('info-overlay').classList.add('hidden');
 
 const txtInput       = $('txt-input');
 const selCols        = $('sel-cols');
@@ -46,7 +48,12 @@ btnExportDict.addEventListener('click',  () => exportDictionary(dictionary));
 fileImportDict.addEventListener('change', handleImportDict);
 modalClose.addEventListener('click',     closeModal);
 modalOverlay.addEventListener('click',   e => { if (e.target === modalOverlay) closeModal(); });
-document.addEventListener('keydown',     e => { if (e.key === 'Escape') closeModal(); });
+document.addEventListener('keydown',     e => { if (e.key === 'Escape') { closeModal(); closeInfo(); } });
+
+// Info panel
+$('btn-info').addEventListener('click',   openInfo);
+$('info-close').addEventListener('click', closeInfo);
+$('info-overlay').addEventListener('click', e => { if (e.target === $('info-overlay')) closeInfo(); });
 
 // ══════════════════════════════════════════════════════════════════
 //  GENERA TESSERE

@@ -4,6 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tesserine CAA – EduTechLab</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#7c3aed" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Tesserine CAA" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+
+  <!-- SEO -->
+  <meta name="description" content="Genera fogli A4 con pittogrammi ARASAAC pronti da stampare per la CAA – scuola primaria" />
+
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -15,8 +27,81 @@
         <h1>Tesserine CAA</h1>
         <p>Genera fogli A4 con pittogrammi ARASAAC — stampa, ritaglia, incolla sul quaderno</p>
       </div>
+      <button id="btn-info" class="btn-info" title="Come si usa?" aria-label="Guida">ⓘ</button>
     </div>
   </header>
+
+  <!-- ── PANNELLO INFO ─────────────────────────────────────────────── -->
+  <div id="info-overlay" class="modal-overlay hidden">
+    <div class="modal info-modal">
+      <h3>ℹ️ Come si usa — Tesserine CAA</h3>
+
+      <div class="info-section">
+        <h4>📝 1. Inserisci il testo</h4>
+        <p>Scrivi una frase o un breve racconto nel campo di testo. Puoi usare maiuscole o minuscole.
+        Es: <em>"Il bambino mangia la mela rossa"</em></p>
+      </div>
+
+      <div class="info-section">
+        <h4>⚙️ 2. Scegli le opzioni</h4>
+        <ul>
+          <li><b>Colonne / Righe</b> — quante tessere per pagina A4 (es. 4×5 = 20 tessere per foglio)</li>
+          <li><b>Dimensione tessera</b> — da 4 cm a 5 cm; influisce solo sul PDF finale</li>
+          <li><b>Rimuovi articoli…</b> — se spuntato, filtra parole come IL, LA, UNO, DI, A, ecc. per tenere solo le parole piene</li>
+        </ul>
+      </div>
+
+      <div class="info-section">
+        <h4>🔍 3. Genera le tesserine</h4>
+        <p>Clicca <b>"Genera Tesserine CAA"</b>. L'app cerca automaticamente il pittogramma ARASAAC per ogni parola.
+        Vedrai l'anteprima divisa in pagine A4.</p>
+        <p>⏳ La prima volta per ogni parola ci vuole qualche secondo (richiesta all'API ARASAAC).</p>
+      </div>
+
+      <div class="info-section">
+        <h4>↔️ 4. Cambia un pittogramma</h4>
+        <p>Clicca su qualsiasi tessera per vedere pittogrammi alternativi. Seleziona quello più adatto:
+        la tua scelta viene salvata automaticamente e usata ogni volta che scrivi quella parola.</p>
+      </div>
+
+      <div class="info-section">
+        <h4>🖨️ 5. Scarica il PDF</h4>
+        <p>Clicca <b>"Scarica PDF"</b> per ottenere un file A4 pronto per la stampa a colori.
+        Stampa, ritaglia lungo i bordi tratteggiati e incolla sul quaderno!</p>
+      </div>
+
+      <div class="info-section">
+        <h4>💾 6. Dizionario personale</h4>
+        <p>L'app ricorda automaticamente quale pittogramma hai scelto per ogni parola
+        (salvato nel browser). Puoi:</p>
+        <ul>
+          <li><b>⬇ Esporta dizionario</b> — salva un file JSON con tutte le tue associazioni</li>
+          <li><b>⬆ Importa dizionario</b> — carica un dizionario da un altro dispositivo o collega</li>
+        </ul>
+      </div>
+
+      <div class="info-section">
+        <h4>📱 Installa come app</h4>
+        <p>Puoi installare Tesserine CAA direttamente sul tuo dispositivo per usarla senza connessione:</p>
+        <ul>
+          <li><b>PC / Mac</b> — nel browser Chrome/Edge: icona ⊕ nella barra degli indirizzi → "Installa app"</li>
+          <li><b>Android</b> — Chrome: menu ⋮ → "Aggiungi a schermata Home"</li>
+          <li><b>iPad / iPhone</b> — Safari: pulsante Condividi 𝛿 → "Aggiungi a schermata Home"</li>
+          <li><b>LIM / Smartboard</b> — usa direttamente da browser Chrome/Edge</li>
+        </ul>
+        <p>⚠️ La generazione dei pittogrammi richiede connessione a Internet (API ARASAAC).</p>
+      </div>
+
+      <div class="info-section info-license">
+        <p>🔑 Pittogrammi: <a href="https://arasaac.org" target="_blank" rel="noopener">ARASAAC</a>
+        © Gobierno de Aragón – Licenza
+        <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a>
+        — uso gratuito per scopo educativo non commerciale.</p>
+      </div>
+
+      <button id="info-close" class="btn primary">✓ Ho capito, inizia!</button>
+    </div>
+  </div>
 
   <main>
 
@@ -120,6 +205,16 @@
 
   <!-- App (ES modules — richiede server HTTP, non funziona con file://) -->
   <script type="module" src="js/app.js"></script>
+
+  <!-- Registrazione Service Worker (PWA offline) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .catch(err => console.warn('SW registration failed:', err));
+      });
+    }
+  </script>
 
 </body>
 </html>
