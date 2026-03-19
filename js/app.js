@@ -11,6 +11,10 @@ import { parseText }                                    from './parser.js';
 import { searchPictograms, getPictogramUrl,
          fetchImageAsDataURL }                          from './arasaac.js';
 import { getCandidates }                                from './lemmatizer.js';
+import {
+  loadCustomImages, saveCustomImages, addCustomImage, removeCustomImage,
+  fileToDataURL, exportAll, importAll, CUSTOM_PREFIX,
+} from './custom-images.js';
 
 // ── Stato globale ──────────────────────────────────────────────
 let dictionary     = loadDictionary();
@@ -23,6 +27,7 @@ let dictionary     = loadDictionary();
 let tiles          = [];
 /** Parole che sono state lemmatizzate: {ORIGINALE → lemma} */
 let lemmaLog       = {};
+let customImages = loadCustomImages();
 let currentOptions = { cols: 4, rows: 5, tileSize: 45 };
 
 // ── Riferimenti DOM ────────────────────────────────────────────
@@ -52,7 +57,7 @@ const modalClose     = $('modal-close');
 // ── Event listeners ────────────────────────────────────────────
 btnGenerate.addEventListener('click',    handleGenerate);
 btnPdf.addEventListener('click',         handleExportPDF);
-btnExportDict.addEventListener('click',  () => exportDictionary(dictionary));
+btnExportDict.addEventListener('click',  () => exportAll(dictionary, customImages));
 fileImportDict.addEventListener('change', handleImportDict);
 modalClose.addEventListener('click',     closeModal);
 modalOverlay.addEventListener('click',   e => { if (e.target === modalOverlay) closeModal(); });
@@ -117,9 +122,35 @@ async function handleGenerate() {
 
         if (alts.length > 0) {
           id         = alts[0].id;
-          // Salva nel dizionario la parola ORIGINALE → id (così la prossima volta non cerca di nuovo)
           dictionary = rememberWord(dictionary, word, id);
         }
+
+        // ── Prova SEMPRE anche l'infinito per parole simili a verbi ──────
+        // (anche se ARASAAC ha trovato qualcosa, potrebbe essere sbagliato)
+        // I risultati dell'infinito vengono aggiunti come alternative nella modale.
+        if (!lemma) {
+          const verbCandidates = getCandidates(word);
+          if (verbCandidates.length > 0) {
+            try {
+              const verbAlts = await searchPictograms(verbCandidates[0]);
+              if (verbAlts.length > 0) {
+                if (alts.length === 0) {
+                  // Parola non trovata originale → usa l'infinito
+                  alts  = verbAlts;
+                  lemma = verbCandidates[0];
+                  lemmaLog[word] = verbCandidates[0];
+                  id         = alts[0].id;
+                  dictionary = rememberWord(dictionary, word, id);
+                } else {
+                  // Parola trovata originale → aggiungi risultati infinito come alt extra
+                  const existingIds = new Set(alts.map(a => a.id));
+                  verbAlts.forEach(a => { if (!existingIds.has(a.id)) alts.push(a); });
+                }
+              }
+            } catch { /* ignora */ }
+          }
+        }
+
       } catch (e) {
         console.warn('[app] Errore ARASAAC per', word, e.message);
       }
@@ -135,11 +166,13 @@ async function handleGenerate() {
 
     id ? ok++ : fail++;
 
+    // Controlla se c'è un'immagine personalizzata per questa parola
+    const customDataURL = customImages[word];
     tiles.push({
       word,
       id,
-      imageUrl: id ? getPictogramUrl(id) : null,
-      dataURL:  null,
+      imageUrl: customDataURL || (id ? getPictogramUrl(id) : null),
+      dataURL:  customDataURL || null,   // se custom, già pronta come dataURL
       alts,
       lemma,
     });
@@ -150,7 +183,7 @@ async function handleGenerate() {
 
   await Promise.all(
     tiles
-      .filter(t => t.imageUrl)
+      .filter(t => t.imageUrl && !t.dataURL)   // skippa se già ha dataURL (immagini custom)
       .map(async t => { t.dataURL = await fetchImageAsDataURL(t.imageUrl); })
   );
 
@@ -235,10 +268,21 @@ function buildTileElement(tile) {
   const imgWrap = document.createElement('div');
   imgWrap.className = 'tile-img-wrap';
 
-  if (tile.imageUrl) {
+  const customDataURL = customImages[tile.word];
+  if (customDataURL) {
+    // Immagine personalizzata (priorità su ARASAAC)
     const img = document.createElement('img');
-    // Usa dataURL se disponibile (utile per evitare reload CORS),
-    // altrimenti usa l'URL diretto (funziona sempre nell'<img>)
+    img.src = customDataURL;
+    img.alt = tile.word;
+    imgWrap.appendChild(img);
+    // Badge 📷 per immagini custom
+    const badge = document.createElement('span');
+    badge.className   = 'custom-badge';
+    badge.title       = 'Immagine personalizzata';
+    badge.textContent = '📷';
+    el.appendChild(badge);
+  } else if (tile.imageUrl) {
+    const img = document.createElement('img');
     img.src     = tile.dataURL || tile.imageUrl;
     img.alt     = tile.word;
     img.loading = 'lazy';
@@ -296,6 +340,53 @@ async function openModal(tile) {
   }
 
   modalAlts.innerHTML = '';
+
+  // ── Sezione immagine personalizzata ──────────────────────────
+  const customSection = document.createElement('div');
+  customSection.className = 'custom-upload-section';
+  const customDataURL = customImages[tile.word];
+  if (customDataURL) {
+    const currentCustom = document.createElement('div');
+    currentCustom.className = 'current-custom';
+    currentCustom.innerHTML = `
+      <img src="${customDataURL}" alt="Immagine personalizzata" style="width:80px;height:80px;object-fit:contain;border:2px solid #22c55e;border-radius:8px;">
+      <span>Immagine personalizzata attiva</span>
+      <button class="btn secondary small" id="btn-remove-custom">✕ Rimuovi</button>
+    `;
+    currentCustom.querySelector('#btn-remove-custom').addEventListener('click', () => {
+      customImages = removeCustomImage(customImages, tile.word);
+      renderPages();
+      openModal(tile);
+    });
+    customSection.appendChild(currentCustom);
+  }
+  const uploadLabel = document.createElement('label');
+  uploadLabel.className = 'custom-upload-label';
+  uploadLabel.innerHTML = `
+    📁 Carica immagine personalizzata (PNG, JPG, GIF...)
+    <input type="file" accept="image/*" style="display:none" id="inp-custom-img">
+  `;
+  uploadLabel.querySelector('#inp-custom-img').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const dataURL = await fileToDataURL(file);
+      customImages  = addCustomImage(customImages, tile.word, dataURL);
+      tile.dataURL  = dataURL;
+      tile.imageUrl = dataURL;
+      renderPages();
+      closeModal();
+    } catch (err) {
+      alert('Errore caricamento immagine: ' + err.message);
+    }
+  });
+  customSection.appendChild(uploadLabel);
+  const divider = document.createElement('div');
+  divider.className = 'modal-divider';
+  divider.innerHTML = '<span>oppure scegli un pittogramma ARASAAC</span>';
+  customSection.appendChild(divider);
+  modalAlts.appendChild(customSection);
+
   tile.alts.forEach(alt => {
     const el = document.createElement('div');
     el.className = 'alt-tile' + (alt.id === tile.id ? ' selected' : '');
@@ -337,16 +428,22 @@ async function handleImportDict(e) {
   if (!file) return;
 
   try {
-    const imported = await importDictionaryFromFile(file);
-    dictionary = { ...dictionary, ...imported };
+    const { dict, imgs } = await importAll(file);
+    dictionary   = { ...dictionary, ...dict };
+    customImages = { ...customImages, ...imgs };
     saveDictionary(dictionary);
-    const n = Object.keys(imported).length;
-    showStatus(`✅ Dizionario importato: ${n} parole aggiunte/aggiornate.`, 'success');
+    saveCustomImages(customImages);
+    const nd = Object.keys(dict).length;
+    const ni = Object.keys(imgs).length;
+    const msg = ni > 0
+      ? `✅ Importati: ${nd} pittogrammi + ${ni} immagini personalizzate.`
+      : `✅ Dizionario importato: ${nd} parole.`;
+    showStatus(msg, 'success');
   } catch (err) {
     showStatus(`❌ Errore importazione: ${err.message}`, 'error');
   }
 
-  e.target.value = '';   // reset input file
+  e.target.value = '';
 }
 
 // ══════════════════════════════════════════════════════════════════

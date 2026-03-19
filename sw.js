@@ -3,7 +3,7 @@
 //  ⚙️  Aggiorna CACHE_NAME ad ogni deploy per forzare il refresh
 // ══════════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'caa-tesserine-v1.1';
+const CACHE_NAME = 'caartella-v1.2';
 
 const STATIC_ASSETS = [
   './',
@@ -14,6 +14,7 @@ const STATIC_ASSETS = [
   './js/parser.js',
   './js/arasaac.js',
   './js/lemmatizer.js',
+  './js/custom-images.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',

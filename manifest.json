@@ -1,6 +1,6 @@
 {
-  "name": "Tesserine CAA",
-  "short_name": "CAA",
+  "name": "CAArtella by EduTechLab",
+  "short_name": "CAArtella",
   "description": "Genera fogli A4 con pittogrammi ARASAAC pronti da stampare – scuola primaria",
   "start_url": "./",
   "display": "standalone",
