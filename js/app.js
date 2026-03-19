@@ -324,32 +324,45 @@ async function openModal(tile) {
   modalAlts.innerHTML   = '<p style="color:#64748b;font-size:.9rem">Carico alternative…</p>';
   modalOverlay.classList.remove('hidden');
 
-  // Carica le alternative se non ancora disponibili
+  // ── Carica alternative ARASAAC (con fallback lemmatizzazione) ─
   if (!tile.alts || tile.alts.length === 0) {
     try {
       tile.alts = await searchPictograms(tile.word);
     } catch {
       tile.alts = [];
     }
+
+    // Se ARASAAC non trova nulla, prova la forma base (es. mangia → mangiare)
+    if (tile.alts.length === 0) {
+      const candidates = getCandidates(tile.word);
+      for (const candidate of candidates) {
+        try {
+          const found = await searchPictograms(candidate);
+          if (found.length > 0) {
+            tile.alts = found;
+            tile.lemma = candidate;
+            break;
+          }
+        } catch { /* prossimo */ }
+      }
+    }
   }
 
-  if (tile.alts.length === 0) {
-    modalAlts.innerHTML =
-      '<p style="color:#ef4444;font-size:.9rem">Nessun pittogramma trovato per questa parola.</p>';
-    return;
-  }
-
+  // ── Render modal ──────────────────────────────────────────────
   modalAlts.innerHTML = '';
 
   // ── Sezione immagine personalizzata ──────────────────────────
+  // ── Sezione immagine personalizzata (SEMPRE visibile) ────────
   const customSection = document.createElement('div');
   customSection.className = 'custom-upload-section';
+
   const customDataURL = customImages[tile.word];
   if (customDataURL) {
     const currentCustom = document.createElement('div');
     currentCustom.className = 'current-custom';
     currentCustom.innerHTML = `
-      <img src="${customDataURL}" alt="Immagine personalizzata" style="width:80px;height:80px;object-fit:contain;border:2px solid #22c55e;border-radius:8px;">
+      <img src="${customDataURL}" alt="Immagine personalizzata"
+           style="width:80px;height:80px;object-fit:contain;border:2px solid #22c55e;border-radius:8px;">
       <span>Immagine personalizzata attiva</span>
       <button class="btn secondary small" id="btn-remove-custom">✕ Rimuovi</button>
     `;
@@ -360,13 +373,14 @@ async function openModal(tile) {
     });
     customSection.appendChild(currentCustom);
   }
+
   const uploadLabel = document.createElement('label');
   uploadLabel.className = 'custom-upload-label';
   uploadLabel.innerHTML = `
-    📁 Carica immagine personalizzata (PNG, JPG, GIF...)
-    <input type="file" accept="image/*" style="display:none" id="inp-custom-img">
+    📁 Carica immagine personalizzata (PNG, JPG, GIF…)
+    <input type="file" accept="image/*" style="display:none">
   `;
-  uploadLabel.querySelector('#inp-custom-img').addEventListener('change', async e => {
+  uploadLabel.querySelector('input[type=file]').addEventListener('change', async e => {
     const file = e.target.files[0];
     if (!file) return;
     try {
@@ -381,11 +395,22 @@ async function openModal(tile) {
     }
   });
   customSection.appendChild(uploadLabel);
-  const divider = document.createElement('div');
-  divider.className = 'modal-divider';
-  divider.innerHTML = '<span>oppure scegli un pittogramma ARASAAC</span>';
-  customSection.appendChild(divider);
   modalAlts.appendChild(customSection);
+
+  // ── Se nessun risultato ARASAAC → messaggio + stop ────────────
+  if (tile.alts.length === 0) {
+    const noRes = document.createElement('p');
+    noRes.style.cssText = 'color:#64748b;font-size:.85rem;text-align:center;padding:0.8rem 0 0.3rem;';
+    noRes.textContent   = 'Nessun pittogramma trovato su ARASAAC. Puoi usare un\'immagine personalizzata qui sopra.';
+    modalAlts.appendChild(noRes);
+    return;
+  }
+
+  // ── Divisore + griglia ARASAAC ────────────────────────────────
+  const divider = document.createElement('div');
+  divider.className   = 'modal-divider';
+  divider.innerHTML   = '<span>oppure scegli un pittogramma ARASAAC</span>';
+  modalAlts.appendChild(divider);
 
   tile.alts.forEach(alt => {
     const el = document.createElement('div');
