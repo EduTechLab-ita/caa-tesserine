@@ -243,6 +243,19 @@ select {
 
 .tile:hover .swap-hint { opacity: 1; }
 
+/* Cella vuota (fine frase): bordo tratteggiato leggero, non interattiva */
+.tile--empty {
+  background: transparent;
+  border: 1.5px dashed #e2e8f0;
+  cursor: default;
+  pointer-events: none;
+}
+.tile--empty:hover {
+  border-color: #e2e8f0;
+  border-style: dashed;
+  transform: none;
+}
+
 /* Badge "≈" verde su tessere dove la forma base è stata usata */
 .lemma-badge {
   position: absolute;

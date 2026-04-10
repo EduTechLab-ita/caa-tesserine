@@ -7,7 +7,7 @@ import {
   exportDictionary, importDictionaryFromFile,
 } from './dictionary.js';
 
-import { parseText }                                    from './parser.js';
+import { parseText, parseTextToPhrases }                from './parser.js';
 import { searchPictograms, getPictogramUrl,
          fetchImageAsDataURL }                          from './arasaac.js';
 import { getCandidates }                                from './lemmatizer.js';
@@ -75,8 +75,8 @@ async function handleGenerate() {
   const text = txtInput.value.trim();
   if (!text) { showStatus('Inserisci prima un testo.', 'error'); return; }
 
-  const words = parseText(text, chkStop.checked);
-  if (words.length === 0) {
+  const phrases = parseTextToPhrases(text, chkStop.checked);
+  if (phrases.length === 0) {
     showStatus('Nessuna parola trovata dopo il filtro. Prova a deselezionare "Rimuovi articoli…".', 'error');
     return;
   }
@@ -87,95 +87,75 @@ async function handleGenerate() {
   lemmaLog = {};
 
   let ok = 0, fail = 0;
+  const allWords  = phrases.flat();
+  let   globalIdx = 0;
 
-  // ── Per ogni parola: cerca nel dizionario o chiama ARASAAC ───
-  for (let i = 0; i < words.length; i++) {
-    const word = words[i];
-    showStatus(`⏳ (${i + 1}/${words.length}) Cerco pittogramma per: ${word}…`);
+  // ── Per ogni frase, per ogni parola: cerca nel dizionario o chiama ARASAAC ───
+  for (let pi = 0; pi < phrases.length; pi++) {
+    const phrase = phrases[pi];
+    for (let wi = 0; wi < phrase.length; wi++) {
+      const word          = phrase[wi];
+      const isLastOfPhrase = wi === phrase.length - 1;
+      showStatus(`⏳ (${globalIdx + 1}/${allWords.length}) Cerco pittogramma per: ${word}…`);
 
-    const savedId = lookupWord(dictionary, word);
-    let id    = savedId;
-    let alts  = [];
-    let lemma = null;   // forma base usata se diversa da word
+      const savedId = lookupWord(dictionary, word);
+      let id    = savedId;
+      let alts  = [];
+      let lemma = null;
 
-    if (!savedId) {
-      try {
-        // 1. Prova la parola originale
-        alts = await searchPictograms(word);
-
-        // 2. Se non trovata, prova i candidati lemmatizzati
-        if (alts.length === 0) {
+      if (!savedId) {
+        try {
+          // 1. Prova PRIMA i candidati all'infinito (verbi coniugati → infinito)
           const candidates = getCandidates(word);
           for (const candidate of candidates) {
-            showStatus(`⏳ (${i + 1}/${words.length}) "${word}" non trovata — provo: ${candidate}…`);
+            showStatus(`⏳ (${globalIdx + 1}/${allWords.length}) "${word}" → provo: ${candidate}…`);
             try {
               const candidateAlts = await searchPictograms(candidate);
               if (candidateAlts.length > 0) {
                 alts  = candidateAlts;
-                lemma = candidate;           // segna che abbiamo usato la forma base
-                lemmaLog[word] = candidate;  // per il riepilogo finale
+                lemma = candidate;
+                lemmaLog[word] = candidate;
                 break;
               }
             } catch { /* prossimo candidato */ }
           }
-        }
 
-        if (alts.length > 0) {
-          id         = alts[0].id;
-          dictionary = rememberWord(dictionary, word, id);
-        }
-
-        // ── Prova SEMPRE anche l'infinito per parole simili a verbi ──────
-        // (anche se ARASAAC ha trovato qualcosa, potrebbe essere sbagliato)
-        // I risultati dell'infinito vengono aggiunti come alternative nella modale.
-        if (!lemma) {
-          const verbCandidates = getCandidates(word);
-          if (verbCandidates.length > 0) {
-            try {
-              const verbAlts = await searchPictograms(verbCandidates[0]);
-              if (verbAlts.length > 0) {
-                if (alts.length === 0) {
-                  // Parola non trovata originale → usa l'infinito
-                  alts  = verbAlts;
-                  lemma = verbCandidates[0];
-                  lemmaLog[word] = verbCandidates[0];
-                  id         = alts[0].id;
-                  dictionary = rememberWord(dictionary, word, id);
-                } else {
-                  // Parola trovata originale → aggiungi risultati infinito come alt extra
-                  const existingIds = new Set(alts.map(a => a.id));
-                  verbAlts.forEach(a => { if (!existingIds.has(a.id)) alts.push(a); });
-                }
-              }
-            } catch { /* ignora */ }
+          // 2. Se nessun infinito trovato, prova la parola originale
+          if (alts.length === 0) {
+            alts = await searchPictograms(word);
           }
+
+          if (alts.length > 0) {
+            id         = alts[0].id;
+            dictionary = rememberWord(dictionary, word, id);
+          }
+
+        } catch (e) {
+          console.warn('[app] Errore ARASAAC per', word, e.message);
         }
-
-      } catch (e) {
-        console.warn('[app] Errore ARASAAC per', word, e.message);
+      } else {
+        searchPictograms(word)
+          .then(a => {
+            const t = tiles.find(t => t.word === word);
+            if (t && a.length > 0) t.alts = a;
+          })
+          .catch(() => {});
       }
-    } else {
-      // Carica le alternative in background senza bloccare la UI
-      searchPictograms(word)
-        .then(a => {
-          const t = tiles.find(t => t.word === word);
-          if (t && a.length > 0) t.alts = a;
-        })
-        .catch(() => {});
+
+      id ? ok++ : fail++;
+
+      const customDataURL = customImages[word];
+      tiles.push({
+        word,
+        id,
+        imageUrl:  customDataURL || (id ? getPictogramUrl(id) : null),
+        dataURL:   customDataURL || null,
+        alts,
+        lemma,
+        phraseEnd: isLastOfPhrase,   // true = ultima parola di questa frase
+      });
+      globalIdx++;
     }
-
-    id ? ok++ : fail++;
-
-    // Controlla se c'è un'immagine personalizzata per questa parola
-    const customDataURL = customImages[word];
-    tiles.push({
-      word,
-      id,
-      imageUrl: customDataURL || (id ? getPictogramUrl(id) : null),
-      dataURL:  customDataURL || null,   // se custom, già pronta come dataURL
-      alts,
-      lemma,
-    });
   }
 
   // ── Pre-scarica le immagini come dataURL per jsPDF ───────────
@@ -183,7 +163,7 @@ async function handleGenerate() {
 
   await Promise.all(
     tiles
-      .filter(t => t.imageUrl && !t.dataURL)   // skippa se già ha dataURL (immagini custom)
+      .filter(t => t.imageUrl && !t.dataURL)
       .map(async t => { t.dataURL = await fetchImageAsDataURL(t.imageUrl); })
   );
 
@@ -200,7 +180,7 @@ async function handleGenerate() {
   const lemmaEntries = Object.entries(lemmaLog);
   let msg = fail > 0
     ? `✅ Completato! ${ok} tessere OK, ${fail} parole senza pittogramma (❓).`
-    : `✅ Completato! ${words.length} tessere generate.`;
+    : `✅ Completato! ${allWords.length} tessere generate in ${phrases.length} fras${phrases.length === 1 ? 'e' : 'i'}.`;
 
   if (lemmaEntries.length > 0) {
     const list = lemmaEntries.map(([orig, base]) => `${orig} → ${base}`).join(', ');
@@ -208,8 +188,43 @@ async function handleGenerate() {
   }
 
   showStatus(msg, 'success');
-
   btnGenerate.disabled = false;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  LAYOUT FRASE-AWARE
+//  Produce array di pagine; ogni pagina è array di righe;
+//  ogni riga è array di (tile | null).  null = cella vuota (fine frase).
+// ══════════════════════════════════════════════════════════════════
+function computeLayout(tilesArr, cols, rows) {
+  const pages = [];
+  let page = [];
+  let row  = [];
+
+  for (const tile of tilesArr) {
+    row.push(tile);
+    const rowFull   = row.length >= cols;
+    const breakHere = tile.phraseEnd;
+
+    if (rowFull || breakHere) {
+      while (row.length < cols) row.push(null);   // padding celle vuote
+      page.push(row);
+      row = [];
+      if (page.length >= rows) {
+        pages.push(page);
+        page = [];
+      }
+    }
+  }
+
+  // Flush riga/pagina parziale rimasta
+  if (row.length > 0) {
+    while (row.length < cols) row.push(null);
+    page.push(row);
+  }
+  if (page.length > 0) pages.push(page);
+
+  return pages;
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -219,21 +234,20 @@ function renderPages() {
   pagesContainer.innerHTML = '';
 
   const { cols, rows } = currentOptions;
-  const perPage  = cols * rows;
-  const numPages = Math.ceil(tiles.length / perPage);
+  const layout   = computeLayout(tiles, cols, rows);
+  const numPages = layout.length;
 
   lblCount.textContent = tiles.length;
   lblPages.textContent = numPages;
   secPreview.classList.remove('hidden');
 
-  for (let p = 0; p < numPages; p++) {
-    const slice  = tiles.slice(p * perPage, (p + 1) * perPage);
-    const pageEl = buildPageElement(slice, cols, rows, p + 1, numPages);
+  layout.forEach((pageRows, pi) => {
+    const pageEl = buildPageElement(pageRows, cols, pi + 1, numPages);
     pagesContainer.appendChild(pageEl);
-  }
+  });
 }
 
-function buildPageElement(pageTiles, cols, rows, pageNum, totalPages) {
+function buildPageElement(pageRows, cols, pageNum, totalPages) {
   const page = document.createElement('div');
   page.className = 'a4-page';
 
@@ -248,7 +262,18 @@ function buildPageElement(pageTiles, cols, rows, pageNum, totalPages) {
   grid.className = 'tile-grid';
   grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
-  pageTiles.forEach(tile => grid.appendChild(buildTileElement(tile)));
+  pageRows.forEach(row => {
+    row.forEach(tile => {
+      if (tile) {
+        grid.appendChild(buildTileElement(tile));
+      } else {
+        const empty = document.createElement('div');
+        empty.className = 'tile tile--empty';
+        grid.appendChild(empty);
+      }
+    });
+  });
+
   page.appendChild(grid);
   return page;
 }
@@ -478,6 +503,16 @@ async function handleExportPDF() {
   if (tiles.length === 0) return;
 
   btnPdf.disabled = true;
+
+  // ── Secondo tentativo (sequenziale) per immagini non scaricate al primo giro ─
+  const missing = tiles.filter(t => t.imageUrl && !t.dataURL);
+  if (missing.length > 0) {
+    showStatus(`⏳ Riprovo ${missing.length} immagini mancanti…`);
+    for (const t of missing) {
+      t.dataURL = await fetchImageAsDataURL(t.imageUrl);
+    }
+  }
+
   showStatus('⏳ Generazione PDF in corso…');
 
   try {
@@ -491,7 +526,6 @@ async function handleExportPDF() {
 }
 
 async function generatePDF() {
-  // Verifica che jsPDF sia caricato
   if (!window.jspdf || !window.jspdf.jsPDF) {
     throw new Error('Libreria jsPDF non caricata. Verifica la connessione Internet.');
   }
@@ -500,85 +534,78 @@ async function generatePDF() {
   const { jsPDF }      = window.jspdf;
 
   // ── Misure A4 in mm ──────────────────────────────────────────
-  const PAGE_W  = 210;   // ⚙️ larghezza A4 (non modificare per A4 standard)
+  const PAGE_W  = 210;   // ⚙️ larghezza A4
   const PAGE_H  = 297;   // ⚙️ altezza A4
-  const MARGIN  = 8;     // ⚙️ margine esterno in mm (aumenta per più spazio)
+  const MARGIN  = 8;     // ⚙️ margine esterno in mm
   const GAP     = 2;     // ⚙️ spazio tra tessere in mm
-  const TEXT_H  = 6;     // ⚙️ altezza zona testo sotto l'immagine in mm
+  const TEXT_H  = 6;     // ⚙️ altezza zona testo in mm
   const IMG_PAD = 1;     // ⚙️ padding interno immagine in mm
+  const FONT_SIZE = 9;   // ⚙️ dimensione font parola
 
   const availW  = PAGE_W - 2 * MARGIN;
   const availH  = PAGE_H - 2 * MARGIN;
-
-  // Dimensione cella quadrata che si adatta a colonne e righe
-  const cellW = (availW - (cols - 1) * GAP) / cols;
-  const cellH = (availH - (rows - 1) * GAP) / rows;
-  const cell  = Math.min(cellW, cellH);
-
+  const cellW   = (availW - (cols - 1) * GAP) / cols;
+  const cellH   = (availH - (rows - 1) * GAP) / rows;
+  const cell    = Math.min(cellW, cellH);
   const imgSize = cell - TEXT_H - IMG_PAD * 2;
 
-  // ── Font PDF ──────────────────────────────────────────────────
-  // ⚙️  Cambia FONT_SIZE per parole più grandi o più piccole
-  const FONT_SIZE = 9;
-
-  const perPage   = cols * rows;
-  const pageCount = Math.ceil(tiles.length / perPage);
+  // ── Layout frase-aware (condiviso con il preview) ─────────────
+  const layout    = computeLayout(tiles, cols, rows);
+  const pageCount = layout.length;
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(FONT_SIZE);
 
   // ── Genera ogni pagina ────────────────────────────────────────
-  for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
-    if (pageIdx > 0) doc.addPage();
+  for (let pi = 0; pi < pageCount; pi++) {
+    if (pi > 0) doc.addPage();
 
-    const pageTiles = tiles.slice(pageIdx * perPage, (pageIdx + 1) * perPage);
+    layout[pi].forEach((row, rowIdx) => {
+      row.forEach((tile, colIdx) => {
+        if (!tile) return;  // cella vuota (fine frase) → salta
 
-    pageTiles.forEach((tile, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x   = MARGIN + col * (cell + GAP);
-      const y   = MARGIN + row * (cell + GAP);
+        const x = MARGIN + colIdx * (cell + GAP);
+        const y = MARGIN + rowIdx * (cell + GAP);
 
-      // ── Bordo tessera ─────────────────────────────────────────
-      // ⚙️  Cambia colore bordo con setDrawColor(R,G,B)
-      doc.setDrawColor(180, 180, 180);
-      doc.setLineWidth(0.3);
-      doc.roundedRect(x, y, cell, cell, 1, 1, 'S');
+        // ── Bordo tessera ─────────────────────────────────────
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(x, y, cell, cell, 1, 1, 'S');
 
-      // ── Immagine ──────────────────────────────────────────────
-      if (tile.dataURL && tile.dataURL.startsWith('data:')) {
-        try {
-          doc.addImage(
-            tile.dataURL, 'PNG',
-            x + IMG_PAD, y + IMG_PAD,
-            imgSize, imgSize,
-            undefined, 'FAST'
-          );
-        } catch (e) {
-          console.warn('[PDF] addImage fallito per', tile.word, e.message);
+        // ── Immagine ──────────────────────────────────────────
+        if (tile.dataURL && tile.dataURL.startsWith('data:')) {
+          try {
+            doc.addImage(
+              tile.dataURL, 'PNG',
+              x + IMG_PAD, y + IMG_PAD,
+              imgSize, imgSize,
+              undefined, 'FAST'
+            );
+          } catch (e) {
+            console.warn('[PDF] addImage fallito per', tile.word, e.message);
+            drawNoImage(doc, x, y, cell, imgSize, IMG_PAD);
+          }
+        } else {
           drawNoImage(doc, x, y, cell, imgSize, IMG_PAD);
         }
-      } else {
-        drawNoImage(doc, x, y, cell, imgSize, IMG_PAD);
-      }
 
-      // ── Linea separatrice immagine / testo ────────────────────
-      const sepY = y + IMG_PAD + imgSize + 0.5;
-      doc.setDrawColor(220, 220, 220);
-      doc.line(x + 1, sepY, x + cell - 1, sepY);
+        // ── Linea separatrice immagine / testo ────────────────
+        const sepY = y + IMG_PAD + imgSize + 0.5;
+        doc.setDrawColor(220, 220, 220);
+        doc.line(x + 1, sepY, x + cell - 1, sepY);
 
-      // ── Testo parola ──────────────────────────────────────────
-      // ⚙️  Cambia colore testo: setTextColor(R,G,B)
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(FONT_SIZE);
-      doc.text(
-        tile.word,
-        x + cell / 2,
-        y + cell - 1.5,
-        { align: 'center', maxWidth: cell - 2 }
-      );
+        // ── Testo parola ──────────────────────────────────────
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(FONT_SIZE);
+        doc.text(
+          tile.word,
+          x + cell / 2,
+          y + cell - 1.5,
+          { align: 'center', maxWidth: cell - 2 }
+        );
+      });
     });
   }
 

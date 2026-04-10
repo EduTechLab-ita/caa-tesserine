@@ -53,21 +53,24 @@ export async function searchPictograms(word) {
  * @returns {Promise<string|null>}  dataURL 'data:image/png;base64,...' oppure null
  */
 export async function fetchImageAsDataURL(url) {
-  try {
-    const resp = await fetch(url, { mode: 'cors' });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-
-    const blob = await resp.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload  = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (err) {
-    console.warn('[ARASAAC] fetchImageAsDataURL fallito per', url, '—', err.message);
-    // Le immagini verranno mostrate nell'<img> (che bypassa CORS),
-    // ma nel PDF potrebbero mancare se CORS è bloccato.
-    return null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 600 * attempt));
+      const resp = await fetch(url, { mode: 'cors' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const blob = await resp.blob();
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (err) {
+      if (attempt === 2) {
+        console.warn('[ARASAAC] fetchImageAsDataURL fallito per', url, '—', err.message);
+        return null;
+      }
+    }
   }
+  return null;
 }

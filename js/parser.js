@@ -47,6 +47,19 @@ const ALL_STOPWORDS = new Set([
 ]);
 
 /**
+ * Estrae le parole dal testo rispettando i newline come separatori di frase.
+ * @param {string}  text
+ * @param {boolean} removeStopWords
+ * @returns {string[][]} array di frasi, ognuna array di parole in UPPERCASE
+ */
+export function parseTextToPhrases(text, removeStopWords = true) {
+  return text
+    .split(/\n/)
+    .map(line => parseText(line, removeStopWords))
+    .filter(phrase => phrase.length > 0);
+}
+
+/**
  * Estrae le parole dal testo.
  * @param {string}  text             - testo in qualsiasi maiuscolo/minuscolo
  * @param {boolean} removeStopWords  - se true filtra le stop-words italiane
