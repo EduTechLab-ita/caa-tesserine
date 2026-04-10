@@ -53,9 +53,35 @@ export async function searchPictograms(word) {
  * @returns {Promise<string|null>}  dataURL 'data:image/png;base64,...' oppure null
  */
 export async function fetchImageAsDataURL(url) {
+  // ── Tentativo 1: Image + Canvas con crossOrigin ────────────────
+  // Usa la pipeline di caricamento immagini del browser (più affidabile
+  // del fetch diretto per i CDN ARASAAC che rispondono in modo inconsistente).
+  try {
+    return await new Promise((resolve, reject) => {
+      const img   = new Image();
+      img.crossOrigin = 'anonymous';
+      const timer = setTimeout(() => reject(new Error('timeout')), 12000);
+      img.onload = () => {
+        clearTimeout(timer);
+        try {
+          const c = document.createElement('canvas');
+          c.width  = img.naturalWidth  || 500;
+          c.height = img.naturalHeight || 500;
+          c.getContext('2d').drawImage(img, 0, 0);
+          const dataUrl = c.toDataURL('image/png');
+          if (dataUrl.length < 200) throw new Error('immagine vuota');
+          resolve(dataUrl);
+        } catch (e) { reject(e); }
+      };
+      img.onerror = () => { clearTimeout(timer); reject(new Error('load error')); };
+      img.src = url;
+    });
+  } catch { /* fallback sotto */ }
+
+  // ── Tentativo 2: fetch CORS con retry e delay crescente ───────
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      if (attempt > 0) await new Promise(r => setTimeout(r, 600 * attempt));
+      if (attempt > 0) await new Promise(r => setTimeout(r, 700 * attempt));
       const resp = await fetch(url, { mode: 'cors' });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const blob = await resp.blob();
