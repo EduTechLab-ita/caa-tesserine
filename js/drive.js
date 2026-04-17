@@ -450,7 +450,7 @@ function _refreshConnectedPanel() {
 }
 
 // ── UI: Toast salvataggio ─────────────────────────────────────────
-function showDriveToast(msg) {
+export function showDriveToast(msg) {
   const toast = document.getElementById('drive-toast');
   if (!toast) return;
   const msgEl = toast.querySelector('.drive-toast-msg');

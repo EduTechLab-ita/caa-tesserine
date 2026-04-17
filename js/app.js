@@ -13,7 +13,7 @@ import {
   loadDriveConfig, isDriveConnected, connectToDrive, disconnectDrive,
   saveStudentToDrive, loadStudentFromDrive, listStudentsOnDrive,
   connectSharedFile, isSharedStudent, getStudentShareCode, getDriveFolderUrl,
-  openDriveModal, closeDriveModal, showDrivePanel, updateDriveButton,
+  openDriveModal, closeDriveModal, showDrivePanel, updateDriveButton, showDriveToast,
 } from './drive.js';
 
 import { parseText, parseTextToPhrases }                from './parser.js';
@@ -87,6 +87,30 @@ loadDriveConfig(() => {
   syncStudentListFromDrive();
 });
 
+// ── Link magico: ?condividi=CODICE ──────────────────────────────
+// Quando un/una collega clicca il link nel messaggio Drive,
+// il codice viene precompilato automaticamente nei campi di input.
+{
+  const sharedCode = new URLSearchParams(location.search).get('condividi');
+  if (sharedCode) {
+    // Precompila entrambi i campi (pre e post connessione)
+    const fillInputs = () => {
+      const pre  = document.getElementById('shared-code-input-pre');
+      const post = document.getElementById('shared-code-input-post');
+      if (pre)  pre.value  = sharedCode;
+      if (post) post.value = sharedCode;
+    };
+    fillInputs();
+    // Apri il modal Drive e mostra un toast esplicativo
+    setTimeout(() => {
+      fillInputs(); // ri-esegui dopo eventuali reinit DOM
+      _refreshDriveSharePanel();
+      openDriveModal();
+      showDriveToast('📥 Codice vocabolario rilevato! Collega il Drive e clicca Carica nel box blu.');
+    }, 600);
+  }
+}
+
 // Esponi funzioni Drive all'HTML (onclick nei pulsanti del modal)
 window._openDriveModal  = () => { _refreshDriveSharePanel(); openDriveModal(); };
 window._openDriveFolder = () => {
@@ -101,23 +125,19 @@ window._copyShareCode   = () => {
   const studentName = getCurrentStudent();
   if (!code || code.startsWith('—') || code.startsWith('⏳')) return;
 
+  const shareUrl = `https://edutechlab.it/caa-tesserine/?condividi=${code}`;
   const msg =
 `📚 Ti condivido il vocabolario CAA di "${studentName}" tramite CAArtella.
 
-Il file è già nella sezione "Condivisi con me" del tuo Drive — non devi fare nulla lì.
+Il file è già nella sezione "Condivisi con me" del tuo Drive.
 
-APRI L'APP (clicca questo link o incollalo nel browser):
-👉 https://edutechlab.it/caa-tesserine/
+APRI L'APP con questo link — il codice è già incluso:
+👉 ${shareUrl}
 
-POI SEGUI QUESTI PASSI (solo la prima volta):
-1. Clicca il pulsante "Drive" in alto a destra (nell'intestazione viola)
-2. Clicca "Collega a Google Drive" e accedi con il tuo account Google scolastico
-3. Clicca di nuovo "Drive" — vedrai il box "Hai ricevuto un vocabolario?" (in blu)
-4. Incolla questo codice nel box blu:
-
-   🔑 ${code}
-
-5. Clicca "Carica" — il vocabolario di "${studentName}" apparirà nel selettore alunno!
+Una volta aperta la pagina:
+1. Clicca "Collega a Google Drive" e accedi con il tuo account Google scolastico
+2. Il codice è già precompilato nel box blu "Hai ricevuto un vocabolario?"
+3. Clicca "Carica" — il vocabolario di "${studentName}" apparirà nel selettore alunno!
 
 Da quel momento le nostre modifiche si sincronizzano automaticamente 🎉`;
 
