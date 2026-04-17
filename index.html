@@ -98,7 +98,7 @@
         <h4>👤 7. Selettore alunno</h4>
         <p>Usa il selettore in cima alla pagina per gestire vocabolari separati per ogni alunno:</p>
         <ul>
-          <li><b>Senza nome</b> — dizionario generico, funziona come sempre</li>
+          <li><b>Senza nome</b> — dizionario generico, non legato ad alcun alunno</li>
           <li><b>+ Nuovo</b> — crea un alunno: il suo dizionario è separato dagli altri</li>
           <li>Cambiando alunno si carica automaticamente il suo vocabolario</li>
         </ul>
@@ -115,8 +115,9 @@
         <ol style="font-size:0.9rem;padding-left:1.2rem;">
           <li>Seleziona l'alunno/a nel selettore in cima alla pagina</li>
           <li>Apri il pannello Drive → vedrai il codice per quell'alunno/a</li>
-          <li>Vai su Google Drive, trova il file <b>vocabolario-[nome].json</b> nella cartella <b>CAArtella</b>, clic destro → <b>Condividi</b> → aggiungi il/la collega come <b>editor</b></li>
-          <li>Clicca <b>"Copia messaggio"</b> nel pannello Drive e incolla il testo <b>nello spazio del messaggio</b> della condivisione Drive prima di inviare — il messaggio contiene già tutte le istruzioni per il/la collega</li>
+          <li>Clicca <b>"Copia messaggio"</b> nel pannello Drive</li>
+          <li>Clicca <b>"Apri CAArtella su Drive"</b> — si apre la cartella Drive direttamente</li>
+          <li>Clic destro sul file <b>vocabolario-[nome].json</b> → <b>Condividi</b> → aggiungi il/la collega come <b>editor</b> → incolla il messaggio copiato nello spazio del messaggio → invia</li>
           <li>Il/la collega riceve l'invito, lo accetta e segue le istruzioni: il vocabolario apparirà automaticamente nel suo selettore alunno</li>
         </ol>
         <p style="font-size:0.85rem;color:#64748b;margin-top:0.5rem;">
@@ -319,19 +320,17 @@
           </div>
           <div id="drive-share-with-student" style="display:none;">
             <ol style="font-size:0.82rem;color:#475569;padding-left:18px;margin:6px 0 10px;">
-              <li>Vai su Drive, trova il file <b id="drive-share-filename"></b> nella cartella <b>CAArtella</b>, clic destro → <b>Condividi</b> → aggiungi il/la collega come <b>editor</b></li>
-              <li>Clicca <b>"Copia messaggio"</b> qui sotto e incolla il testo <b>nello spazio del messaggio</b> della condivisione Drive prima di inviare</li>
-              <li>Il/la collega riceve l'invito Drive, lo accetta, poi segue le istruzioni nel messaggio: il vocabolario apparirà nel selettore alunno e si sincronizzerà automaticamente</li>
+              <li>Clicca <b>"Copia messaggio"</b> qui sotto</li>
+              <li>Clicca <b>"Apri CAArtella su Drive"</b> — si apre la cartella direttamente</li>
+              <li>Clic destro sul file <b id="drive-share-filename"></b> → <b>Condividi</b> → aggiungi il/la collega come <b>editor</b> → incolla il messaggio copiato nello spazio del messaggio → invia</li>
+              <li>Il/la collega riceve l'invito, lo accetta e segue le istruzioni nel messaggio: il vocabolario apparirà automaticamente</li>
             </ol>
-            <div style="display:flex;gap:8px;align-items:center;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <input id="drive-share-code" type="text" readonly
-                     style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.8rem;background:#f1f5f9;color:#334155;font-family:monospace;">
+                     style="flex:1;min-width:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.8rem;background:#f1f5f9;color:#334155;font-family:monospace;">
               <button type="button" class="btn secondary small" onclick="window._copyShareCode()">📋 Copia messaggio</button>
+              <button type="button" id="drive-open-folder-btn" class="btn secondary small" onclick="window._openDriveFolder()" style="display:none;">📂 Apri CAArtella su Drive</button>
             </div>
-            <p style="font-size:0.75rem;color:#64748b;margin-top:6px;background:#f8fafc;padding:6px 10px;border-radius:6px;">
-              📋 <b>"Copia messaggio"</b> copia un testo già pronto con il codice e le istruzioni passo-passo — basta incollarlo nello spazio del messaggio della condivisione Drive (quello che compare quando aggiungi un/una collega).<br>
-              🔒 Il/la collega deve ricevere anche l'invito Drive per poter accedere.
-            </p>
           </div>
           <!-- Vocabolari condivisi ricevuti -->
           <div id="drive-shared-students" style="margin-top:12px;display:none;">

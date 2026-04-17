@@ -196,6 +196,12 @@ export function isSharedStudent(studentName) {
   return !!(driveState.sharedFileIds?.[studentName]);
 }
 
+// ── URL cartella CAArtella su Drive (null se non connesso) ────────
+export function getDriveFolderUrl() {
+  if (!driveState.folderId) return null;
+  return `https://drive.google.com/drive/folders/${driveState.folderId}`;
+}
+
 // ── Salva dizionario alunno su Drive ─────────────────────────────
 export async function saveStudentToDrive(studentName, dict, custom) {
   if (!isDriveConnected()) return;

@@ -12,7 +12,7 @@ import {
 import {
   loadDriveConfig, isDriveConnected, connectToDrive, disconnectDrive,
   saveStudentToDrive, loadStudentFromDrive, listStudentsOnDrive,
-  connectSharedFile, isSharedStudent, getStudentShareCode,
+  connectSharedFile, isSharedStudent, getStudentShareCode, getDriveFolderUrl,
   openDriveModal, closeDriveModal, showDrivePanel, updateDriveButton,
 } from './drive.js';
 
@@ -89,6 +89,10 @@ loadDriveConfig(() => {
 
 // Esponi funzioni Drive all'HTML (onclick nei pulsanti del modal)
 window._openDriveModal  = () => { _refreshDriveSharePanel(); openDriveModal(); };
+window._openDriveFolder = () => {
+  const url = getDriveFolderUrl();
+  if (url) window.open(url, '_blank');
+};
 window._closeDriveModal = closeDriveModal;
 window._connectDrive    = connectToDrive;
 window._disconnectDrive = () => disconnectDrive(() => { updateStudentSelector(); });
@@ -858,6 +862,10 @@ async function _refreshDriveSharePanel() {
 
   if (noStudentEl)   noStudentEl.style.display   = 'none';
   if (withStudentEl) withStudentEl.style.display = 'block';
+
+  // Mostra/nasconde bottone "Apri CAArtella su Drive"
+  const folderBtn = document.getElementById('drive-open-folder-btn');
+  if (folderBtn) folderBtn.style.display = getDriveFolderUrl() ? 'inline-flex' : 'none';
 
   // Carica il codice (file ID) per questo alunno
   if (codeEl) {
