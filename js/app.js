@@ -155,7 +155,15 @@ Una volta aperta la pagina, si aprirà automaticamente il pannello Drive con il 
 2. Nel box giallo/blu vedrai il codice già pronto — clicca "Carica"
 3. Il vocabolario di "${studentName}" apparirà nel selettore alunno!
 
-Da quel momento le nostre modifiche si sincronizzano automaticamente 🎉`;
+Da quel momento le nostre modifiche si sincronizzano automaticamente 🎉
+
+---
+⚠️ Se il link non si apre correttamente, puoi usare il codice manuale:
+Apri https://edutechlab.it/caa-tesserine/, clicca "Drive" in alto a destra, collega il tuo account Google, poi incolla questo codice nel box blu "Hai ricevuto un vocabolario?":
+
+*** ${code} ***
+
+e clicca Carica.`;
 
   navigator.clipboard.writeText(msg)
     .then(() => alert(
