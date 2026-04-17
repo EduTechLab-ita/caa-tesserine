@@ -47,9 +47,9 @@
       <div class="info-section">
         <h4>⚙️ 2. Scegli le opzioni</h4>
         <ul>
-          <li><b>Colonne / Righe</b> — quante tessere per pagina A4 (es. 4×5 = 20 tessere per foglio)</li>
-          <li><b>Dimensione tessera</b> — da 4 cm a 5 cm; influisce solo sul PDF finale</li>
-          <li><b>Rimuovi articoli…</b> — se spuntato, filtra parole come IL, LA, UNO, DI, A, ecc. per tenere solo le parole piene</li>
+          <li><b>Colonne / Righe</b> — quante tessere per pagina A4 (es. 4×5 = 20 tessere per foglio; fino a 7 colonne per tessere molto piccole)</li>
+          <li><b>Dimensione tessera</b> — da 2 cm (xs, molte tessere) a 5 cm (grandi); influisce solo sul PDF finale</li>
+          <li><b>Rimuovi articoli…</b> — se spuntato, filtra parole come IL, LA, UNO, DI, A, ecc. per tenere solo le parole piene. Di default è disattivato: tutte le parole vengono incluse.</li>
         </ul>
       </div>
 
@@ -147,6 +147,8 @@
             <option value="3">3</option>
             <option value="4" selected>4</option>
             <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
           </select>
         </div>
         <div class="opt">
@@ -161,6 +163,8 @@
         <div class="opt">
           <label for="sel-size">Tessera (PDF)</label>
           <select id="sel-size">
+            <option value="20">2 × 2 cm (xs)</option>
+            <option value="30">3 × 3 cm (small)</option>
             <option value="40">4 × 4 cm</option>
             <option value="45" selected>4.5 × 4.5 cm</option>
             <option value="50">5 × 5 cm</option>
@@ -169,7 +173,7 @@
       </div>
 
       <label class="check-label">
-        <input type="checkbox" id="chk-stopwords" checked />
+        <input type="checkbox" id="chk-stopwords" />
         Rimuovi articoli, pronomi e preposizioni
       </label>
 
