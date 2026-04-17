@@ -145,7 +145,7 @@ window._copyShareCode   = () => {
 
 Il file è già nella sezione "Condivisi con me" del tuo Drive.
 
-APRI L'APP — copia questo link e incollalo nella barra degli indirizzi del browser
+APRI L'APP, e per farlo — copia questo link e incollalo nella barra degli indirizzi del browser
 (è la barra in cima al browser dove si scrivono i siti web, non nel motore di ricerca), poi premi Invio:
 
 👉 ${shareUrl}
