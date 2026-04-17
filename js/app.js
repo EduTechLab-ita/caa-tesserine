@@ -98,26 +98,25 @@ window._copyShareCode   = () => {
   if (!code || code.startsWith('—') || code.startsWith('⏳')) return;
 
   const msg =
-`📚 Ti condivido il vocabolario CAA di "${studentName}" su CAArtella.
+`📚 Ti condivido il vocabolario CAA di "${studentName}" tramite CAArtella.
 
-COSA DEVI FARE (solo la prima volta):
-1. Apri CAArtella: https://edutechlab.it/caa-tesserine/
-2. Clicca il pulsante "Drive" in alto a destra nell'header
-3. Clicca "Collega a Google Drive" e accedi con il tuo account Google
-4. Dopo la connessione, clicca di nuovo "Drive" e apri la sezione "Aggiungi vocabolario condiviso da una collega"
-5. Incolla questo codice: ${code}
-6. Clicca "Carica" — il vocabolario di "${studentName}" apparirà nel selettore alunno
+COSA FARE (solo la prima volta — segui i passi nell'ordine):
+1. Accetta l'invito Drive che hai ricevuto insieme a questo messaggio (clic su "Apri" o "Accetta")
+2. Apri CAArtella: https://edutechlab.it/caa-tesserine/
+3. Clicca il pulsante "Drive" in alto a destra (nell'intestazione viola)
+4. Clicca "Collega a Google Drive" e accedi con il tuo account Google scolastico
+5. Dopo la connessione clicca di nuovo "Drive", poi espandi "Aggiungi vocabolario condiviso da un/una collega"
+6. Incolla questo codice: ${code}
+7. Clicca "Carica" — il vocabolario di "${studentName}" apparirà nel selettore alunno in cima alla pagina
 
-Da quel momento le modifiche si sincronizzano automaticamente tra noi! 🎉
-
-⚠️ Attenzione: devi prima accettare l'invito Drive che ti ho mandato separatamente, altrimenti il codice non funziona.`;
+Da quel momento le tue modifiche e le mie si sincronizzano automaticamente! 🎉`;
 
   navigator.clipboard.writeText(msg)
     .then(() => alert(
       '✅ Messaggio copiato!\n\n' +
-      'Ora:\n' +
-      '1. Mandalo alla collega (WhatsApp, email…)\n' +
-      '2. Dal pannello Drive qui apri anche Google Drive e condividi il file con lei come "Editor"'
+      'Ora incollalo nello spazio del messaggio della condivisione Drive\n' +
+      '(quello che compare quando aggiungi il/la collega come editor).\n\n' +
+      'Il messaggio contiene già il codice e tutte le istruzioni.'
     ));
 };
 // Collegamento vocabolario condiviso — dalla schermata di login (non ancora connessa)

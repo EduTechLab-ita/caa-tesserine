@@ -113,13 +113,14 @@
         </p>
         <h5 style="margin-top:0.8rem;">Condividere il vocabolario con una collega</h5>
         <ol style="font-size:0.9rem;padding-left:1.2rem;">
-          <li>Seleziona l'alunno nel selettore</li>
-          <li>Apri il pannello Drive → copia il <b>codice</b> mostrato per quell'alunno</li>
-          <li>Vai su Google Drive, trova il file <b>vocabolario-[nome].json</b> nella cartella <b>CAArtella</b>, clic destro → <b>Condividi</b> → aggiungi la collega come <b>editor</b> → nel messaggio di condivisione incolla il codice</li>
-          <li>La collega apre CAArtella → Drive → incolla il codice → il vocabolario appare nel suo selettore</li>
+          <li>Seleziona l'alunno/a nel selettore in cima alla pagina</li>
+          <li>Apri il pannello Drive → vedrai il codice per quell'alunno/a</li>
+          <li>Vai su Google Drive, trova il file <b>vocabolario-[nome].json</b> nella cartella <b>CAArtella</b>, clic destro → <b>Condividi</b> → aggiungi il/la collega come <b>editor</b></li>
+          <li>Clicca <b>"Copia messaggio"</b> nel pannello Drive e incolla il testo <b>nello spazio del messaggio</b> della condivisione Drive prima di inviare — il messaggio contiene già tutte le istruzioni per il/la collega</li>
+          <li>Il/la collega riceve l'invito, lo accetta e segue le istruzioni: il vocabolario apparirà automaticamente nel suo selettore alunno</li>
         </ol>
         <p style="font-size:0.85rem;color:#64748b;margin-top:0.5rem;">
-          🔒 Solo chi riceve il codice <b>e</b> viene invitata su Drive può accedere al vocabolario.
+          🔒 Solo chi riceve il codice <b>e</b> viene invitato/a su Drive può accedere al vocabolario.
         </p>
       </div>
 
@@ -318,9 +319,9 @@
           </div>
           <div id="drive-share-with-student" style="display:none;">
             <ol style="font-size:0.82rem;color:#475569;padding-left:18px;margin:6px 0 10px;">
-              <li>Copia il codice qui sotto e mandalo alla collega (WhatsApp, email…)</li>
-              <li>Vai su Drive, trova il file <b id="drive-share-filename"></b>, cliccaci sopra con il tasto destro → <b>Condividi</b> → aggiungi la collega come <b>editor</b> → nel messaggio incolla il codice</li>
-              <li>La collega apre CAArtella, clicca Drive, incolla il codice: il vocabolario appare nel suo selettore e si sincronizza automaticamente</li>
+              <li>Vai su Drive, trova il file <b id="drive-share-filename"></b> nella cartella <b>CAArtella</b>, clic destro → <b>Condividi</b> → aggiungi il/la collega come <b>editor</b></li>
+              <li>Clicca <b>"Copia messaggio"</b> qui sotto e incolla il testo <b>nello spazio del messaggio</b> della condivisione Drive prima di inviare</li>
+              <li>Il/la collega riceve l'invito Drive, lo accetta, poi segue le istruzioni nel messaggio: il vocabolario apparirà nel selettore alunno e si sincronizzerà automaticamente</li>
             </ol>
             <div style="display:flex;gap:8px;align-items:center;">
               <input id="drive-share-code" type="text" readonly
@@ -328,8 +329,8 @@
               <button type="button" class="btn secondary small" onclick="window._copyShareCode()">📋 Copia messaggio</button>
             </div>
             <p style="font-size:0.75rem;color:#64748b;margin-top:6px;background:#f8fafc;padding:6px 10px;border-radius:6px;">
-              📋 <b>"Copia messaggio"</b> copia un testo già pronto con il codice e le istruzioni passo-passo per la collega — basta incollarlo su WhatsApp o email!<br>
-              🔒 La collega deve anche accettare l'invito Drive che le mandi separatamente.
+              📋 <b>"Copia messaggio"</b> copia un testo già pronto con il codice e le istruzioni passo-passo — basta incollarlo nello spazio del messaggio della condivisione Drive (quello che compare quando aggiungi un/una collega).<br>
+              🔒 Il/la collega deve ricevere anche l'invito Drive per poter accedere.
             </p>
           </div>
           <!-- Vocabolari condivisi ricevuti -->
