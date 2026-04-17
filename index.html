@@ -131,6 +131,14 @@
         <p style="font-size:0.85rem;color:#64748b;margin-top:0.5rem;">
           🔒 Solo chi riceve il codice <b>e</b> viene invitato/a su Drive può accedere al vocabolario.
         </p>
+        <h5 style="margin-top:1rem;">📥 Hai ricevuto un vocabolario da un/una collega?</h5>
+        <p style="font-size:0.9rem;">Quando ricevi l'invito Drive, accettalo e poi apri CAArtella. Nel pannello Drive troverai questa sezione ben in evidenza:</p>
+        <ol style="font-size:0.9rem;padding-left:1.2rem;">
+          <li>Collega il tuo account Google Drive (se non l'hai ancora fatto)</li>
+          <li>Apri il pannello Drive → trovi il box blu <b>"Hai ricevuto un vocabolario da un/una collega?"</b></li>
+          <li>Incolla il codice che ti è stato inviato nel messaggio Drive</li>
+          <li>Clicca <b>Carica</b> — il vocabolario apparirà nel selettore alunno e si sincronizzerà automaticamente</li>
+        </ol>
       </div>
 
       <div class="info-section">
@@ -360,17 +368,20 @@
 
         <hr style="margin:14px 0;border:none;border-top:1px solid #e2e8f0;">
 
-        <!-- Aggiungi vocabolario condiviso (quando già connessa) -->
-        <details style="font-size:0.82rem;color:#475569;margin-bottom:12px;">
-          <summary style="cursor:pointer;font-weight:600;">➕ Aggiungi vocabolario condiviso da un/una collega</summary>
-          <div style="margin-top:8px;">
-            <div style="display:flex;gap:8px;">
-              <input id="shared-code-input-post" type="text" placeholder="Incolla il codice ricevuto…"
-                     style="flex:1;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">
-              <button type="button" class="btn secondary small" onclick="window._connectSharedPost()">Carica</button>
-            </div>
+        <!-- Aggiungi vocabolario condiviso (quando già connesso/a) -->
+        <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+          <p style="font-size:0.85rem;font-weight:700;color:#1d4ed8;margin:0 0 6px;">
+            📥 Hai ricevuto un vocabolario da un/una collega?
+          </p>
+          <p style="font-size:0.8rem;color:#1e40af;margin:0 0 8px;">
+            Incolla qui il codice che ti ha inviato nel messaggio Drive:
+          </p>
+          <div style="display:flex;gap:8px;">
+            <input id="shared-code-input-post" type="text" placeholder="Incolla il codice ricevuto…"
+                   style="flex:1;padding:7px 10px;border:1.5px solid #93c5fd;border-radius:6px;font-size:0.85rem;background:#fff;">
+            <button type="button" class="btn primary small" onclick="window._connectSharedPost()">Carica</button>
           </div>
-        </details>
+        </div>
 
         <div style="display:flex;gap:8px;">
           <button type="button" class="btn secondary" style="flex:1;" onclick="window._disconnectDrive()">
