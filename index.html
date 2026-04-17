@@ -132,11 +132,11 @@
           🔒 Solo chi riceve il codice <b>e</b> viene invitato/a su Drive può accedere al vocabolario.
         </p>
         <h5 style="margin-top:1rem;">📥 Hai ricevuto un vocabolario da un/una collega?</h5>
-        <p style="font-size:0.9rem;">Quando ricevi l'invito Drive, accettalo e poi apri CAArtella. Nel pannello Drive troverai questa sezione ben in evidenza:</p>
+        <p style="font-size:0.9rem;">Il file è già nella sezione <b>"Condivisi con me"</b> del tuo Drive — non devi fare nulla lì. Apri CAArtella e segui questi passi:</p>
         <ol style="font-size:0.9rem;padding-left:1.2rem;">
-          <li>Collega il tuo account Google Drive (se non l'hai ancora fatto)</li>
-          <li>Apri il pannello Drive → trovi il box blu <b>"Hai ricevuto un vocabolario da un/una collega?"</b></li>
-          <li>Incolla il codice che ti è stato inviato nel messaggio Drive</li>
+          <li>Clicca il pulsante <b>Drive</b> in alto a destra e collega il tuo account Google (se non l'hai ancora fatto)</li>
+          <li>Clicca di nuovo <b>Drive</b> → trovi il box blu <b>"📥 Hai ricevuto un vocabolario da un/una collega?"</b></li>
+          <li>Incolla il codice ricevuto nel messaggio Drive (o clicca <b>"Copia codice"</b> e poi incollalo)</li>
           <li>Clicca <b>Carica</b> — il vocabolario apparirà nel selettore alunno e si sincronizzerà automaticamente</li>
         </ol>
       </div>
@@ -351,12 +351,14 @@
                   <li>Clicca <b>Invia</b></li>
                 </ol>
               </li>
-              <li>Il/la collega riceve l'invito Drive, lo accetta e segue le istruzioni nel messaggio: il vocabolario apparirà automaticamente nel suo selettore alunno</li>
+              <li>Il/la collega trova il file già in "Condivisi con me" su Drive, apre CAArtella e segue le istruzioni nel messaggio: il vocabolario apparirà automaticamente</li>
             </ol>
+            <p style="font-size:0.78rem;color:#64748b;margin-bottom:6px;">Il codice da condividere (incluso nel messaggio):</p>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <input id="drive-share-code" type="text" readonly
                      style="flex:1;min-width:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.8rem;background:#f1f5f9;color:#334155;font-family:monospace;">
-              <button type="button" class="btn secondary small" onclick="window._copyShareCode()">📋 Copia messaggio</button>
+              <button type="button" class="btn secondary small" onclick="window._copyCode()" title="Copia solo il codice">📋 Copia codice</button>
+              <button type="button" class="btn primary small" onclick="window._copyShareCode()">✉️ Copia messaggio</button>
             </div>
           </div>
           <!-- Vocabolari condivisi ricevuti -->

@@ -104,16 +104,22 @@ window._copyShareCode   = () => {
   const msg =
 `📚 Ti condivido il vocabolario CAA di "${studentName}" tramite CAArtella.
 
-COSA FARE (solo la prima volta — segui i passi nell'ordine):
-1. Accetta l'invito Drive che hai ricevuto insieme a questo messaggio (clic su "Apri" o "Accetta")
-2. Apri CAArtella: https://edutechlab.it/caa-tesserine/
-3. Clicca il pulsante "Drive" in alto a destra (nell'intestazione viola)
-4. Clicca "Collega a Google Drive" e accedi con il tuo account Google scolastico
-5. Dopo la connessione clicca di nuovo "Drive", poi espandi "Aggiungi vocabolario condiviso da un/una collega"
-6. Incolla questo codice: ${code}
-7. Clicca "Carica" — il vocabolario di "${studentName}" apparirà nel selettore alunno in cima alla pagina
+Il file è già nella sezione "Condivisi con me" del tuo Drive — non devi fare nulla lì.
 
-Da quel momento le tue modifiche e le mie si sincronizzano automaticamente! 🎉`;
+APRI L'APP (clicca questo link o incollalo nel browser):
+👉 https://edutechlab.it/caa-tesserine/
+
+POI SEGUI QUESTI PASSI (solo la prima volta):
+1. Clicca il pulsante "Drive" in alto a destra (nell'intestazione viola)
+2. Clicca "Collega a Google Drive" e accedi con il tuo account Google scolastico
+3. Clicca di nuovo "Drive" — vedrai il box "Hai ricevuto un vocabolario?" (in blu)
+4. Incolla questo codice nel box blu:
+
+   🔑 ${code}
+
+5. Clicca "Carica" — il vocabolario di "${studentName}" apparirà nel selettore alunno!
+
+Da quel momento le nostre modifiche si sincronizzano automaticamente 🎉`;
 
   navigator.clipboard.writeText(msg)
     .then(() => alert(
@@ -122,6 +128,13 @@ Da quel momento le tue modifiche e le mie si sincronizzano automaticamente! 🎉
       '(quello che compare quando aggiungi il/la collega come editor).\n\n' +
       'Il messaggio contiene già il codice e tutte le istruzioni.'
     ));
+};
+// Copia solo il codice (file ID)
+window._copyCode = () => {
+  const code = document.getElementById('drive-share-code')?.value;
+  if (!code || code.startsWith('—') || code.startsWith('⏳')) return;
+  navigator.clipboard.writeText(code)
+    .then(() => alert('✅ Codice copiato!\n\nIncollalo nel box blu "Hai ricevuto un vocabolario?" nell\'app CAArtella.'));
 };
 // Collegamento vocabolario condiviso — dalla schermata di login (non ancora connessa)
 window._connectShared = async () => {
