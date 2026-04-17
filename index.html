@@ -111,13 +111,21 @@
         <p style="background:#f0fdf4;border-left:3px solid #86efac;padding:0.5rem 0.7rem;border-radius:4px;margin-top:0.5rem;font-size:0.85rem;">
           ✅ I dati vanno direttamente al tuo Google Drive — nessun server intermedio, massima privacy.
         </p>
-        <h5 style="margin-top:0.8rem;">Condividere il vocabolario con una collega</h5>
+        <h5 style="margin-top:0.8rem;">Condividere il vocabolario con un/una collega</h5>
         <ol style="font-size:0.9rem;padding-left:1.2rem;">
           <li>Seleziona l'alunno/a nel selettore in cima alla pagina</li>
           <li>Apri il pannello Drive → vedrai il codice per quell'alunno/a</li>
-          <li>Clicca <b>"Copia messaggio"</b> nel pannello Drive</li>
-          <li>Clicca <b>"Apri CAArtella su Drive"</b> — si apre la cartella Drive direttamente</li>
-          <li>Clic destro sul file <b>vocabolario-[nome].json</b> → <b>Condividi</b> → aggiungi il/la collega come <b>editor</b> → incolla il messaggio copiato nello spazio del messaggio → invia</li>
+          <li>Clicca <b>"Copia messaggio"</b> nel pannello Drive — il testo con le istruzioni è già pronto</li>
+          <li>Clicca il pulsante <b>"Apri CAArtella su Drive"</b> — si apre la cartella direttamente, poi:
+            <ol type="a" style="margin-top:4px;padding-left:16px;">
+              <li>Clicca sui <b>⋮ tre puntini</b> accanto al file <b>vocabolario-[nome].json</b>, oppure fai <b>clic destro</b> col mouse</li>
+              <li>Scegli <b>Condividi</b></li>
+              <li>Cerca il/la collega e aggiungilo/a</li>
+              <li>Assicurati che sia selezionato <b style="color:#b91c1c;">EDITOR</b> — è fondamentale!</li>
+              <li>Incolla il messaggio copiato nello <b>spazio del messaggio</b></li>
+              <li>Clicca <b>Invia</b></li>
+            </ol>
+          </li>
           <li>Il/la collega riceve l'invito, lo accetta e segue le istruzioni: il vocabolario apparirà automaticamente nel suo selettore alunno</li>
         </ol>
         <p style="font-size:0.85rem;color:#64748b;margin-top:0.5rem;">
@@ -297,7 +305,7 @@
           <button type="button" class="btn secondary" onclick="window._connectShared()">Connetti</button>
         </div>
         <p style="font-size:0.75rem;color:#94a3b8;margin-top:6px;">
-          ℹ️ Prima collega il tuo account, poi inserisci il codice. Assicurati che la collega ti abbia già invitata come editor sul file Drive.
+          ℹ️ Prima collega il tuo account, poi inserisci il codice. Assicurati che il/la collega ti abbia già invitato/a come editor sul file Drive.
         </p>
       </div>
 
@@ -320,21 +328,32 @@
           </div>
           <div id="drive-share-with-student" style="display:none;">
             <ol style="font-size:0.82rem;color:#475569;padding-left:18px;margin:6px 0 10px;">
-              <li>Clicca <b>"Copia messaggio"</b> qui sotto</li>
-              <li>Clicca <b>"Apri CAArtella su Drive"</b> — si apre la cartella direttamente</li>
-              <li>Clic destro sul file <b id="drive-share-filename"></b> → <b>Condividi</b> → aggiungi il/la collega come <b>editor</b> → incolla il messaggio copiato nello spazio del messaggio → invia</li>
-              <li>Il/la collega riceve l'invito, lo accetta e segue le istruzioni nel messaggio: il vocabolario apparirà automaticamente</li>
+              <li style="margin-bottom:6px;">
+                Clicca <b>"Copia messaggio"</b> qui sotto — il testo con le istruzioni è già pronto
+              </li>
+              <li style="margin-bottom:6px;">
+                <button type="button" id="drive-open-folder-btn" class="btn primary small" onclick="window._openDriveFolder()" style="display:none;vertical-align:middle;">📂 Apri CAArtella su Drive</button>
+                <span style="vertical-align:middle;"> — poi segui questi passi:</span>
+                <ol type="a" style="margin-top:6px;padding-left:16px;color:#475569;">
+                  <li>Clicca sui <b>⋮ tre puntini</b> accanto al file <b id="drive-share-filename"></b>, oppure fai <b>clic destro</b> col mouse</li>
+                  <li>Scegli <b>Condividi</b></li>
+                  <li>Cerca il/la collega e aggiungilo/a</li>
+                  <li>Assicurati che sia selezionato <b style="color:#b91c1c;">EDITOR</b> — è fondamentale per poter lavorare insieme!</li>
+                  <li>Incolla il messaggio copiato nello <b>spazio del messaggio</b></li>
+                  <li>Clicca <b>Invia</b></li>
+                </ol>
+              </li>
+              <li>Il/la collega riceve l'invito Drive, lo accetta e segue le istruzioni nel messaggio: il vocabolario apparirà automaticamente nel suo selettore alunno</li>
             </ol>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <input id="drive-share-code" type="text" readonly
                      style="flex:1;min-width:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.8rem;background:#f1f5f9;color:#334155;font-family:monospace;">
               <button type="button" class="btn secondary small" onclick="window._copyShareCode()">📋 Copia messaggio</button>
-              <button type="button" id="drive-open-folder-btn" class="btn secondary small" onclick="window._openDriveFolder()" style="display:none;">📂 Apri CAArtella su Drive</button>
             </div>
           </div>
           <!-- Vocabolari condivisi ricevuti -->
           <div id="drive-shared-students" style="margin-top:12px;display:none;">
-            <p style="font-size:0.82rem;font-weight:600;color:#334155;margin-bottom:4px;">📂 Vocabolari condivisi da colleghe:</p>
+            <p style="font-size:0.82rem;font-weight:600;color:#334155;margin-bottom:4px;">📂 Vocabolari condivisi da colleghi/e:</p>
             <div id="drive-shared-list" style="font-size:0.82rem;color:#475569;"></div>
           </div>
         </div>
@@ -343,7 +362,7 @@
 
         <!-- Aggiungi vocabolario condiviso (quando già connessa) -->
         <details style="font-size:0.82rem;color:#475569;margin-bottom:12px;">
-          <summary style="cursor:pointer;font-weight:600;">➕ Aggiungi vocabolario condiviso da una collega</summary>
+          <summary style="cursor:pointer;font-weight:600;">➕ Aggiungi vocabolario condiviso da un/una collega</summary>
           <div style="margin-top:8px;">
             <div style="display:flex;gap:8px;">
               <input id="shared-code-input-post" type="text" placeholder="Incolla il codice ricevuto…"
