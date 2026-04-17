@@ -18,6 +18,9 @@
   <meta name="description" content="CAArtella by EduTechLab – Pittogrammi ARASAAC per la CAA in classe" />
 
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Google Identity Services (per OAuth2 Drive) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -30,8 +33,17 @@
         <p>Genera fogli A4 con pittogrammi ARASAAC — stampa, ritaglia, incolla sul quaderno</p>
       </div>
       <button id="btn-info" class="btn-info" title="Come si usa?" aria-label="Guida">ⓘ</button>
+      <button id="drive-btn" class="drive-button no-print" onclick="window._openDriveModal()" title="Google Drive">
+        <span class="drive-dot"></span>
+        <span id="drive-btn-label">Drive</span>
+      </button>
     </div>
   </header>
+
+  <!-- Drive Save Toast -->
+  <div id="drive-toast" class="drive-toast no-print">
+    <span class="drive-toast-msg">✅ Dizionario salvato su Drive</span>
+  </div>
 
   <!-- ── PANNELLO INFO ─────────────────────────────────────────────── -->
   <div id="info-overlay" class="modal-overlay hidden">
@@ -132,6 +144,19 @@
 
   <main>
 
+    <!-- ── SELETTORE ALUNNO ─────────────────────────────────────────── -->
+    <section class="card student-card">
+      <div class="student-row">
+        <label for="sel-student">👤 Alunno:</label>
+        <select id="sel-student">
+          <option value="">— Nessun nome (uso generico) —</option>
+        </select>
+        <button id="btn-add-student" class="btn secondary small" title="Aggiungi alunno">+ Nuovo</button>
+        <button id="btn-remove-student" class="btn secondary small danger" title="Rimuovi alunno selezionato" style="display:none">✕</button>
+      </div>
+      <p class="student-hint">Il dizionario è separato per ogni alunno. Senza nome usa un dizionario condiviso.</p>
+    </section>
+
     <!-- ── FORM ─────────────────────────────────────────────────────── -->
     <section class="card form-card">
       <h2>Inserisci il testo</h2>
@@ -218,6 +243,95 @@
       <h3>Pittogramma per: <span id="modal-word"></span></h3>
       <div id="modal-alternatives" class="alternatives-grid"></div>
       <button id="modal-close" class="btn secondary">✕ Chiudi</button>
+    </div>
+  </div>
+
+  <!-- ── MODAL DRIVE ──────────────────────────────────────────────── -->
+  <div id="drive-modal" class="modal-overlay" style="display:none;">
+    <div class="modal drive-modal-inner">
+      <h3>☁️ Google Drive</h3>
+
+      <!-- PANNELLO: non connesso -->
+      <div id="drive-panel-connect">
+        <p>Collega il tuo account Google per salvare il dizionario sul Drive.<br>
+        <small style="color:#64748b">I dati vanno direttamente al tuo Drive — nessun server intermedio.</small></p>
+        <button type="button" class="btn primary" style="width:100%;margin-top:12px;" onclick="window._connectDrive()">
+          🔑 Collega a Google Drive
+        </button>
+        <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0;">
+        <p style="font-size:0.85rem;color:#475569;margin-bottom:8px;">
+          <b>Hai il codice di una collega?</b> Inseriscilo qui per usare la cartella condivisa:
+        </p>
+        <div style="display:flex;gap:8px;">
+          <input id="shared-code-input-pre" type="text" placeholder="Incolla il codice cartella…"
+                 style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.9rem;">
+          <button type="button" class="btn secondary" onclick="window._connectShared()">Connetti</button>
+        </div>
+        <p style="font-size:0.75rem;color:#94a3b8;margin-top:6px;">
+          ℹ️ Dovrai comunque collegarti con il tuo account Google. Assicurati di essere stata invitata dalla collega nella sua cartella Drive.
+        </p>
+      </div>
+
+      <!-- PANNELLO: connesso -->
+      <div id="drive-panel-connected" style="display:none;">
+        <div class="drive-status-bar ok">
+          ✅ Connesso — il dizionario viene salvato automaticamente
+        </div>
+        <div style="font-size:0.85rem;color:#475569;margin:10px 0 4px;padding:8px 12px;background:#f8fafc;border-radius:6px;">
+          👤 <span id="drive-user-email"></span>
+          &nbsp;·&nbsp; <span id="drive-mode-label">📁 Cartella personale</span>
+        </div>
+
+        <!-- Codice da condividere -->
+        <div id="drive-share-section" style="margin-top:14px;">
+          <p style="font-size:0.85rem;color:#475569;margin-bottom:6px;">
+            <b>Vuoi condividere il dizionario con le colleghe?</b>
+          </p>
+          <ol style="font-size:0.82rem;color:#475569;padding-left:18px;margin:0 0 10px;">
+            <li>Copia il codice qui sotto e mandalo alle colleghe (WhatsApp, email…)</li>
+            <li>Apri la <a href="#" id="drive-folder-link" target="_blank" rel="noopener">cartella CAArtella su Drive</a> e invitale come editor</li>
+            <li>Le colleghe incollano il codice nella schermata di connessione</li>
+          </ol>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input id="drive-share-code" type="text" readonly
+                   style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;background:#f1f5f9;color:#334155;font-family:monospace;">
+            <button type="button" class="btn secondary small" onclick="window._copyShareCode()">📋 Copia</button>
+          </div>
+        </div>
+
+        <div id="drive-shared-section" style="display:none;margin-top:14px;">
+          <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:8px 12px;font-size:0.82rem;color:#92400e;">
+            📂 Stai usando la cartella condivisa di una collega.
+            <a href="#" onclick="window._switchPersonal();return false;" style="color:#92400e;text-decoration:underline;">Torna alla cartella personale</a>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:16px;">
+          <button type="button" class="btn secondary" style="flex:1;" onclick="window._disconnectDrive()">
+            🔌 Disconnetti
+          </button>
+          <button type="button" class="btn primary" style="flex:1;" onclick="window._closeDriveModal()">
+            ✓ Chiudi
+          </button>
+        </div>
+        <p style="font-size:0.75rem;color:#94a3b8;margin-top:10px;text-align:center;">
+          🔒 Su PC condiviso? Disconnetti al termine per rimuovere i dati dal browser.
+        </p>
+      </div>
+
+      <!-- PANNELLO: errore -->
+      <div id="drive-panel-error" style="display:none;">
+        <div class="drive-status-bar err">
+          ⚠️ <span id="drive-error-text">Errore di connessione</span>
+        </div>
+        <button type="button" class="btn primary" style="width:100%;margin-top:12px;" onclick="window._connectDrive()">
+          Riprova
+        </button>
+      </div>
+
+      <button type="button" class="btn secondary" style="width:100%;margin-top:12px;" onclick="window._closeDriveModal()">
+        ✕ Chiudi
+      </button>
     </div>
   </div>
 

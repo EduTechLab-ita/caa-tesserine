@@ -5,19 +5,29 @@
 import {
   loadDictionary, saveDictionary, lookupWord, rememberWord,
   exportDictionary, importDictionaryFromFile,
+  getStudentsList, getCurrentStudent, setCurrentStudent, addStudent, removeStudent,
+  getLegacyDictionaryCount, loadDictionaryForStudent,
 } from './dictionary.js';
+
+import {
+  loadDriveConfig, isDriveConnected, connectToDrive, disconnectDrive,
+  saveStudentToDrive, loadStudentFromDrive, listStudentsOnDrive,
+  connectSharedFolder, switchToPersonalFolder,
+  openDriveModal, closeDriveModal, showDrivePanel, updateDriveButton, getShareCode,
+} from './drive.js';
 
 import { parseText, parseTextToPhrases }                from './parser.js';
 import { searchPictograms, getPictogramUrl,
          fetchImageAsDataURL }                          from './arasaac.js';
 import { getCandidates }                                from './lemmatizer.js';
 import {
-  loadCustomImages, saveCustomImages, addCustomImage, removeCustomImage,
+  addCustomImage, removeCustomImage,
   fileToDataURL, exportAll, importAll, CUSTOM_PREFIX,
 } from './custom-images.js';
 
 // ── Stato globale ──────────────────────────────────────────────
 let dictionary     = loadDictionary();
+let _driveSaveTimer = null; // debounce per sync Drive
 /**
  * @type {Array<{
  *   word:string, id:number|null, imageUrl:string|null, dataURL:string|null,
@@ -27,7 +37,7 @@ let dictionary     = loadDictionary();
 let tiles          = [];
 /** Parole che sono state lemmatizzate: {ORIGINALE → lemma} */
 let lemmaLog       = {};
-let customImages = loadCustomImages();
+let customImages = loadCustomImagesForStudent(getCurrentStudent());
 let currentOptions = { cols: 4, rows: 5, tileSize: 45 };
 
 // ── Riferimenti DOM ────────────────────────────────────────────
@@ -67,6 +77,42 @@ document.addEventListener('keydown',     e => { if (e.key === 'Escape') { closeM
 $('btn-info').addEventListener('click',   openInfo);
 $('info-close').addEventListener('click', closeInfo);
 $('info-overlay').addEventListener('click', e => { if (e.target === $('info-overlay')) closeInfo(); });
+
+// ── Inizializza selettore alunno ────────────────────────────────
+initStudentSelector();
+
+// ── Inizializza Drive ───────────────────────────────────────────
+loadDriveConfig(() => {
+  // Drive connesso: aggiorna lista alunni da Drive
+  syncStudentListFromDrive();
+});
+
+// Esponi funzioni Drive all'HTML (onclick nei pulsanti del modal)
+window._openDriveModal  = openDriveModal;
+window._closeDriveModal = closeDriveModal;
+window._connectDrive    = connectToDrive;
+window._disconnectDrive = () => disconnectDrive(() => { updateStudentSelector(); });
+window._copyShareCode   = () => {
+  const code = getShareCode();
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(() => alert('Codice copiato! Mandalo alle colleghe.'));
+};
+window._connectShared = async () => {
+  const input = document.getElementById('shared-code-input-pre');
+  const code  = input ? input.value.trim() : '';
+  if (!code) { alert('Inserisci il codice ricevuto dalla collega.'); return; }
+  try {
+    await connectSharedFolder(code);
+    syncStudentListFromDrive();
+  } catch(err) {
+    alert('❌ ' + err.message);
+  }
+};
+window._switchPersonal = async () => {
+  await switchToPersonalFolder();
+  syncStudentListFromDrive();
+  _refreshDriveSharedUI();
+};
 
 // ══════════════════════════════════════════════════════════════════
 //  GENERA TESSERE
@@ -128,6 +174,7 @@ async function handleGenerate() {
           if (alts.length > 0) {
             id         = alts[0].id;
             dictionary = rememberWord(dictionary, word, id);
+            scheduleDriveSync();
           }
 
         } catch (e) {
@@ -393,6 +440,8 @@ async function openModal(tile) {
     `;
     currentCustom.querySelector('#btn-remove-custom').addEventListener('click', () => {
       customImages = removeCustomImage(customImages, tile.word);
+      saveCustomImages(customImages);
+      scheduleDriveSync();
       renderPages();
       openModal(tile);
     });
@@ -411,8 +460,10 @@ async function openModal(tile) {
     try {
       const dataURL = await fileToDataURL(file);
       customImages  = addCustomImage(customImages, tile.word, dataURL);
+      saveCustomImages(customImages);
       tile.dataURL  = dataURL;
       tile.imageUrl = dataURL;
+      scheduleDriveSync();
       renderPages();
       closeModal();
     } catch (err) {
@@ -458,6 +509,7 @@ async function openModal(tile) {
       tile.imageUrl = alt.imageUrl;
       tile.dataURL  = await fetchImageAsDataURL(alt.imageUrl);
       dictionary    = rememberWord(dictionary, tile.word, alt.id);
+      scheduleDriveSync();
       renderPages();
       closeModal();
     });
@@ -631,6 +683,145 @@ function drawNoImage(doc, x, y, cell, imgSize, pad) {
   doc.setTextColor(210, 210, 210);
   doc.text('?', x + cell / 2, y + pad + imgSize / 2 + 3, { align: 'center' });
   doc.setTextColor(0, 0, 0);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SELETTORE ALUNNO
+// ══════════════════════════════════════════════════════════════════
+function initStudentSelector() {
+  updateStudentSelector();
+
+  $('sel-student').addEventListener('change', async e => {
+    const name = e.target.value;
+    setCurrentStudent(name);
+    dictionary   = loadDictionary();
+    customImages = loadCustomImagesForStudent(name);
+
+    // Se Drive connesso, carica dizionario dal Drive per questo alunno
+    if (isDriveConnected()) {
+      const driveData = await loadStudentFromDrive(name);
+      if (driveData) {
+        dictionary   = { ...dictionary,   ...driveData.dict   };
+        customImages = { ...customImages, ...driveData.custom };
+        saveDictionary(dictionary);
+        saveCustomImages(customImages);
+      }
+    }
+
+    _updateRemoveBtn(name);
+    // Se c'erano tessere visibili, aggiorna la preview col nuovo dizionario
+    if (tiles.length > 0) renderPages();
+  });
+
+  $('btn-add-student').addEventListener('click', async () => {
+    const name = prompt('Nome dell\'alunno (es. "Mario R." oppure usa iniziali per la privacy):');
+    if (!name || !name.trim()) return;
+    const trimmed = name.trim();
+    addStudent(trimmed);
+    updateStudentSelector(trimmed);
+    setCurrentStudent(trimmed);
+    dictionary   = loadDictionary();
+    customImages = loadCustomImagesForStudent(trimmed);
+
+    // Migrazione: se esisteva vecchio dizionario anonimo, chiedi se importarlo
+    const legacyCount = getLegacyDictionaryCount();
+    if (legacyCount > 0) {
+      const migrate = confirm(
+        `Hai ${legacyCount} parole già salvate nel dizionario generico.\n` +
+        `Vuoi importarle anche per "${trimmed}"?`
+      );
+      if (migrate) {
+        const legacy = loadDictionaryForStudent('');
+        dictionary   = { ...legacy, ...dictionary };
+        saveDictionary(dictionary);
+      }
+    }
+    _updateRemoveBtn(trimmed);
+  });
+
+  $('btn-remove-student').addEventListener('click', () => {
+    const name = getCurrentStudent();
+    if (!name) return;
+    if (!confirm(`Rimuovi "${name}" dalla lista? Il dizionario salvato non viene eliminato.`)) return;
+    removeStudent(name);
+    updateStudentSelector('');
+    setCurrentStudent('');
+    dictionary   = loadDictionary();
+    customImages = loadCustomImages();
+  });
+}
+
+function updateStudentSelector(selectName) {
+  const sel  = $('sel-student');
+  const list = getStudentsList();
+  const curr = selectName !== undefined ? selectName : getCurrentStudent();
+
+  sel.innerHTML = '<option value="">— Nessun nome (uso generico) —</option>';
+  list.filter(n => n !== '').forEach(name => {
+    const opt = document.createElement('option');
+    opt.value       = name;
+    opt.textContent = name;
+    if (name === curr) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  if (curr === '' || !curr) sel.value = '';
+  _updateRemoveBtn(curr);
+}
+
+function _updateRemoveBtn(studentName) {
+  const btn = $('btn-remove-student');
+  btn.style.display = studentName ? 'inline-block' : 'none';
+}
+
+// Helper per caricare custom images per alunno specifico
+function loadCustomImagesForStudent(studentName) {
+  const key = studentName === '' ? 'caa_custom_images_v1' : `caa_custom_v2_${studentName}`;
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : {};
+  } catch { return {}; }
+}
+
+function saveCustomImages(imgs) {
+  const studentName = getCurrentStudent();
+  const key = studentName === '' ? 'caa_custom_images_v1' : `caa_custom_v2_${studentName}`;
+  localStorage.setItem(key, JSON.stringify(imgs));
+}
+
+// ── Sync lista alunni da Drive (aggiunge alunni trovati su Drive) ─
+async function syncStudentListFromDrive() {
+  if (!isDriveConnected()) return;
+  _refreshDriveSharedUI();
+  const driveStudents = await listStudentsOnDrive();
+  driveStudents.forEach(s => { if (s.name !== undefined) addStudent(s.name); });
+  updateStudentSelector();
+}
+
+function _refreshDriveSharedUI() {
+  const code = getShareCode();
+  const shareSection  = document.getElementById('drive-share-section');
+  const sharedSection = document.getElementById('drive-shared-section');
+  const codeEl        = document.getElementById('drive-share-code');
+  const folderLink    = document.getElementById('drive-folder-link');
+
+  // Mostra sezione giusta in base a modalità
+  const isShared = !!document.getElementById('drive-mode-label')?.textContent.includes('condivisa');
+  if (shareSection)  shareSection.style.display  = isShared ? 'none' : 'block';
+  if (sharedSection) sharedSection.style.display = isShared ? 'block' : 'none';
+  if (codeEl && code) codeEl.value = code;
+  if (folderLink && code) {
+    folderLink.href = `https://drive.google.com/drive/folders/${code}`;
+  }
+}
+
+// ── Salvataggio Drive con debounce (evita chiamate troppo frequenti) ─
+function scheduleDriveSync() {
+  if (!isDriveConnected()) return;
+  clearTimeout(_driveSaveTimer);
+  _driveSaveTimer = setTimeout(async () => {
+    const studentName = getCurrentStudent();
+    await saveStudentToDrive(studentName, dictionary, customImages);
+  }, 1500); // aspetta 1.5s dopo l'ultima modifica prima di salvare
 }
 
 // ── Utility ────────────────────────────────────────────────────
