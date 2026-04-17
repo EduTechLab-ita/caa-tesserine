@@ -88,28 +88,42 @@ loadDriveConfig(() => {
 });
 
 // ── Link magico: ?condividi=CODICE ──────────────────────────────
-// Quando un/una collega clicca il link nel messaggio Drive,
-// il codice viene precompilato automaticamente nei campi di input.
+// Salva il codice in sessionStorage SUBITO (sopravvive al reload OAuth)
+const PENDING_SHARE_KEY = 'caa_pending_share_v1';
 {
-  const sharedCode = new URLSearchParams(location.search).get('condividi');
-  if (sharedCode) {
-    // Precompila entrambi i campi (pre e post connessione)
-    const fillInputs = () => {
-      const pre  = document.getElementById('shared-code-input-pre');
-      const post = document.getElementById('shared-code-input-post');
-      if (pre)  pre.value  = sharedCode;
-      if (post) post.value = sharedCode;
-    };
-    fillInputs();
-    // Apri il modal Drive e mostra un toast esplicativo
-    setTimeout(() => {
-      fillInputs(); // ri-esegui dopo eventuali reinit DOM
-      _refreshDriveSharePanel();
-      openDriveModal();
-      showDriveToast('📥 Codice vocabolario rilevato! Collega il Drive e clicca Carica nel box blu.');
-    }, 600);
+  const fromUrl = new URLSearchParams(location.search).get('condividi');
+  if (fromUrl) {
+    sessionStorage.setItem(PENDING_SHARE_KEY, fromUrl);
+    // Pulisce l'URL senza ricaricare la pagina
+    history.replaceState(null, '', location.pathname);
   }
 }
+
+function _fillPendingShareInputs(code) {
+  const pre  = document.getElementById('shared-code-input-pre');
+  const post = document.getElementById('shared-code-input-post');
+  if (pre)  pre.value = code;
+  if (post) post.value = code;
+  // Mostra il banner nel modal
+  const banner = document.getElementById('drive-incoming-banner');
+  if (banner) {
+    banner.style.display = 'block';
+    const codeEl = banner.querySelector('#drive-incoming-code');
+    if (codeEl) codeEl.textContent = code;
+  }
+}
+
+function applyPendingShare() {
+  const code = sessionStorage.getItem(PENDING_SHARE_KEY);
+  if (!code) return;
+  _fillPendingShareInputs(code);
+  _refreshDriveSharePanel();
+  openDriveModal();
+  showDriveToast('📥 Codice vocabolario ricevuto! Collega il Drive e clicca Carica.');
+}
+
+// Applica il codice dopo che Drive e DOM sono pronti
+setTimeout(applyPendingShare, 800);
 
 // Esponi funzioni Drive all'HTML (onclick nei pulsanti del modal)
 window._openDriveModal  = () => { _refreshDriveSharePanel(); openDriveModal(); };
@@ -131,13 +145,15 @@ window._copyShareCode   = () => {
 
 Il file è già nella sezione "Condivisi con me" del tuo Drive.
 
-APRI L'APP con questo link — il codice è già incluso:
+APRI L'APP — copia questo link e incollalo nella barra degli indirizzi del browser
+(è la barra in cima al browser dove si scrivono i siti web, non nel motore di ricerca), poi premi Invio:
+
 👉 ${shareUrl}
 
-Una volta aperta la pagina:
+Una volta aperta la pagina, si aprirà automaticamente il pannello Drive con il codice già precompilato. Poi:
 1. Clicca "Collega a Google Drive" e accedi con il tuo account Google scolastico
-2. Il codice è già precompilato nel box blu "Hai ricevuto un vocabolario?"
-3. Clicca "Carica" — il vocabolario di "${studentName}" apparirà nel selettore alunno!
+2. Nel box giallo/blu vedrai il codice già pronto — clicca "Carica"
+3. Il vocabolario di "${studentName}" apparirà nel selettore alunno!
 
 Da quel momento le nostre modifiche si sincronizzano automaticamente 🎉`;
 
@@ -187,6 +203,9 @@ window._connectSharedPost = async () => {
     saveDictionaryForStudent(data.studentName, data.dict);
     updateStudentSelector(data.studentName);
     if (input) input.value = '';
+    sessionStorage.removeItem(PENDING_SHARE_KEY); // codice usato, pulizia
+    const banner = document.getElementById('drive-incoming-banner');
+    if (banner) banner.style.display = 'none';
     _refreshDriveSharePanel();
     alert(`✅ Vocabolario di "${data.studentName}" aggiunto! Selezionalo nel selettore alunno.`);
   } catch(err) {
