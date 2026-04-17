@@ -184,7 +184,7 @@ window._copyCode = () => {
 window._connectShared = async () => {
   const input = document.getElementById('shared-code-input-pre');
   const code  = input ? input.value.trim() : '';
-  if (!code) { alert('Inserisci il codice ricevuto dalla collega.'); return; }
+  if (!code) { alert('Inserisci il codice ricevuto dal/dalla collega.'); return; }
   try {
     const data = await connectSharedFile(code);
     addStudent(data.studentName);
@@ -204,7 +204,7 @@ window._connectShared = async () => {
 window._connectSharedPost = async () => {
   const input = document.getElementById('shared-code-input-post');
   const code  = input ? input.value.trim() : '';
-  if (!code) { alert('Inserisci il codice ricevuto dalla collega.'); return; }
+  if (!code) { alert('Inserisci il codice ricevuto dal/dalla collega.'); return; }
   try {
     const data = await connectSharedFile(code);
     addStudent(data.studentName);

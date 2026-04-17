@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════════════════════════════
 
 const DRIVE_CLIENT_ID   = '374342529488-c123a5j5v8hnfs241udbl55fos5thfq6.apps.googleusercontent.com';
-const DRIVE_SCOPE       = 'https://www.googleapis.com/auth/drive.file email profile';
+const DRIVE_SCOPE       = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly email profile';
 const DRIVE_FOLDER_NAME = 'CAArtella';
 
 // ── Stato Drive (persiste in localStorage) ────────────────────────
@@ -163,8 +163,8 @@ export async function connectSharedFile(fileId) {
     data = await resp.json();
   } catch(e) {
     throw new Error(
-      'Codice non valido, oppure non sei stata ancora invitata dalla collega a condividere il file. ' +
-      'Assicurati che la collega ti abbia aggiunto come editor nel file Drive prima di inserire il codice.'
+      'Codice non valido, oppure non sei stato/a ancora invitato/a dal/dalla collega a condividere il file. ' +
+      'Assicurati che il/la collega ti abbia aggiunto/a come editor nel file Drive prima di inserire il codice.'
     );
   }
 
