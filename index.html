@@ -48,7 +48,10 @@
   <!-- ── PANNELLO INFO ─────────────────────────────────────────────── -->
   <div id="info-overlay" class="modal-overlay hidden">
     <div class="modal info-modal">
-      <h3>ℹ️ Come si usa — CAArtella</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+        <h3 style="margin:0;">ℹ️ Come si usa — CAArtella</h3>
+        <button onclick="closeInfo()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;line-height:1;" title="Chiudi">✕</button>
+      </div>
 
       <div class="info-section">
         <h4>📝 1. Inserisci il testo</h4>
@@ -92,18 +95,39 @@
       </div>
 
       <div class="info-section">
-        <h4>💾 7. Dizionario personale</h4>
-        <p>L'app ricorda automaticamente quale pittogramma hai scelto per ogni parola
-        (salvato nel browser). Puoi:</p>
+        <h4>👤 7. Selettore alunno</h4>
+        <p>Usa il selettore in cima alla pagina per gestire vocabolari separati per ogni alunno:</p>
         <ul>
-          <li><b>⬇ Esporta dizionario</b> — salva un file JSON con pittogrammi scelti + immagini personalizzate. Condividilo con le colleghe su Google Drive o WhatsApp.</li>
-          <li><b>⬆ Importa dizionario</b> — carica il file condiviso: ricevi subito tutti i pittogrammi e le immagini personalizzate della collega.</li>
+          <li><b>Senza nome</b> — dizionario generico, funziona come sempre</li>
+          <li><b>+ Nuovo</b> — crea un alunno: il suo dizionario è separato dagli altri</li>
+          <li>Cambiando alunno si carica automaticamente il suo vocabolario</li>
         </ul>
+      </div>
+
+      <div class="info-section">
+        <h4>☁️ 8. Salvataggio su Google Drive</h4>
+        <p>Clicca il pulsante <b>Drive</b> in alto a destra nell'header → <b>"Collega a Google Drive"</b>.<br>
+        Da quel momento ogni modifica al vocabolario viene salvata automaticamente sul tuo Drive, accessibile da qualsiasi PC o tablet.</p>
+        <p style="background:#f0fdf4;border-left:3px solid #86efac;padding:0.5rem 0.7rem;border-radius:4px;margin-top:0.5rem;font-size:0.85rem;">
+          ✅ I dati vanno direttamente al tuo Google Drive — nessun server intermedio, massima privacy.
+        </p>
+        <h5 style="margin-top:0.8rem;">Condividere il vocabolario con una collega</h5>
+        <ol style="font-size:0.9rem;padding-left:1.2rem;">
+          <li>Seleziona l'alunno nel selettore</li>
+          <li>Apri il pannello Drive → copia il <b>codice</b> mostrato per quell'alunno</li>
+          <li>Vai su Google Drive, trova il file <b>vocabolario-[nome].json</b> nella cartella <b>CAArtella</b>, clic destro → <b>Condividi</b> → aggiungi la collega come <b>editor</b> → nel messaggio di condivisione incolla il codice</li>
+          <li>La collega apre CAArtella → Drive → incolla il codice → il vocabolario appare nel suo selettore</li>
+        </ol>
+        <p style="font-size:0.85rem;color:#64748b;margin-top:0.5rem;">
+          🔒 Solo chi riceve il codice <b>e</b> viene invitata su Drive può accedere al vocabolario.
+        </p>
+      </div>
+
+      <div class="info-section">
+        <h4>💾 9. Backup manuale (JSON)</h4>
+        <p>Puoi sempre esportare e importare il vocabolario come file JSON dalla barra degli strumenti sopra l'anteprima. Utile come backup aggiuntivo o per condivisione rapida via WhatsApp.</p>
         <p style="background:#fef9c3;border-left:3px solid #eab308;padding:0.5rem 0.7rem;border-radius:4px;margin-top:0.5rem;font-size:0.85rem;">
-          ⚠️ <b>Attenzione:</b> il dizionario è salvato <b>solo su questo browser</b>, su questa macchina.
-          Se cancelli la cache del browser, cambi PC o usi un altro browser, il dizionario va perso.
-          <b>Esporta regolarmente il file JSON</b> e tienilo in Google Drive come backup.
-          Puoi reimportarlo in qualsiasi momento per ritrovare tutte le scelte fatte.
+          ⚠️ Senza Drive, il vocabolario è salvato <b>solo su questo browser</b>. Se cancelli la cache o cambi PC, va perso. Usa Drive per la sicurezza vera.
         </p>
       </div>
 
@@ -249,64 +273,87 @@
   <!-- ── MODAL DRIVE ──────────────────────────────────────────────── -->
   <div id="drive-modal" class="modal-overlay" style="display:none;">
     <div class="modal drive-modal-inner">
-      <h3>☁️ Google Drive</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <h3 style="margin:0;">☁️ Google Drive</h3>
+        <button type="button" onclick="window._closeDriveModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#64748b;line-height:1;" title="Chiudi">✕</button>
+      </div>
 
       <!-- PANNELLO: non connesso -->
       <div id="drive-panel-connect">
-        <p>Collega il tuo account Google per salvare il dizionario sul Drive.<br>
-        <small style="color:#64748b">I dati vanno direttamente al tuo Drive — nessun server intermedio.</small></p>
+        <p>Collega il tuo account Google per salvare i vocabolari sul Drive.<br>
+        <small style="color:#64748b">I dati vanno direttamente sul tuo Drive — nessun server intermedio.</small></p>
         <button type="button" class="btn primary" style="width:100%;margin-top:12px;" onclick="window._connectDrive()">
           🔑 Collega a Google Drive
         </button>
         <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0;">
-        <p style="font-size:0.85rem;color:#475569;margin-bottom:8px;">
-          <b>Hai il codice di una collega?</b> Inseriscilo qui per usare la cartella condivisa:
+        <p style="font-size:0.85rem;color:#475569;margin-bottom:6px;">
+          <b>Hai il codice di una collega?</b> Inseriscilo per caricare il vocabolario condiviso:
         </p>
         <div style="display:flex;gap:8px;">
-          <input id="shared-code-input-pre" type="text" placeholder="Incolla il codice cartella…"
+          <input id="shared-code-input-pre" type="text" placeholder="Incolla il codice ricevuto…"
                  style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.9rem;">
           <button type="button" class="btn secondary" onclick="window._connectShared()">Connetti</button>
         </div>
         <p style="font-size:0.75rem;color:#94a3b8;margin-top:6px;">
-          ℹ️ Dovrai comunque collegarti con il tuo account Google. Assicurati di essere stata invitata dalla collega nella sua cartella Drive.
+          ℹ️ Prima collega il tuo account, poi inserisci il codice. Assicurati che la collega ti abbia già invitata come editor sul file Drive.
         </p>
       </div>
 
       <!-- PANNELLO: connesso -->
       <div id="drive-panel-connected" style="display:none;">
         <div class="drive-status-bar ok">
-          ✅ Connesso — il dizionario viene salvato automaticamente
+          ✅ Connesso — i vocabolari vengono salvati automaticamente
         </div>
-        <div style="font-size:0.85rem;color:#475569;margin:10px 0 4px;padding:8px 12px;background:#f8fafc;border-radius:6px;">
+        <div style="font-size:0.85rem;color:#475569;margin:10px 0 14px;padding:8px 12px;background:#f8fafc;border-radius:6px;">
           👤 <span id="drive-user-email"></span>
-          &nbsp;·&nbsp; <span id="drive-mode-label">📁 Cartella personale</span>
         </div>
 
-        <!-- Codice da condividere -->
-        <div id="drive-share-section" style="margin-top:14px;">
-          <p style="font-size:0.85rem;color:#475569;margin-bottom:6px;">
-            <b>Vuoi condividere il dizionario con le colleghe?</b>
+        <!-- Condivisione per-alunno -->
+        <div id="drive-share-section">
+          <p style="font-size:0.85rem;font-weight:600;color:#334155;margin-bottom:4px;">
+            📤 Condividi vocabolario di: <span id="drive-share-student-name" style="color:#7c3aed;">—</span>
           </p>
-          <ol style="font-size:0.82rem;color:#475569;padding-left:18px;margin:0 0 10px;">
-            <li>Copia il codice qui sotto e mandalo alle colleghe (WhatsApp, email…)</li>
-            <li>Apri la <a href="#" id="drive-folder-link" target="_blank" rel="noopener">cartella CAArtella su Drive</a> e invitale come editor</li>
-            <li>Le colleghe incollano il codice nella schermata di connessione</li>
-          </ol>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input id="drive-share-code" type="text" readonly
-                   style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;background:#f1f5f9;color:#334155;font-family:monospace;">
-            <button type="button" class="btn secondary small" onclick="window._copyShareCode()">📋 Copia</button>
+          <div id="drive-share-no-student" style="font-size:0.82rem;color:#94a3b8;">
+            ← Seleziona prima un alunno nel selettore per vedere il codice da condividere.
+          </div>
+          <div id="drive-share-with-student" style="display:none;">
+            <ol style="font-size:0.82rem;color:#475569;padding-left:18px;margin:6px 0 10px;">
+              <li>Copia il codice qui sotto e mandalo alla collega (WhatsApp, email…)</li>
+              <li>Vai su Drive, trova il file <b id="drive-share-filename"></b>, cliccaci sopra con il tasto destro → <b>Condividi</b> → aggiungi la collega come <b>editor</b> → nel messaggio incolla il codice</li>
+              <li>La collega apre CAArtella, clicca Drive, incolla il codice: il vocabolario appare nel suo selettore e si sincronizza automaticamente</li>
+            </ol>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="drive-share-code" type="text" readonly
+                     style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.8rem;background:#f1f5f9;color:#334155;font-family:monospace;">
+              <button type="button" class="btn secondary small" onclick="window._copyShareCode()">📋 Copia messaggio</button>
+            </div>
+            <p style="font-size:0.75rem;color:#64748b;margin-top:6px;background:#f8fafc;padding:6px 10px;border-radius:6px;">
+              📋 <b>"Copia messaggio"</b> copia un testo già pronto con il codice e le istruzioni passo-passo per la collega — basta incollarlo su WhatsApp o email!<br>
+              🔒 La collega deve anche accettare l'invito Drive che le mandi separatamente.
+            </p>
+          </div>
+          <!-- Vocabolari condivisi ricevuti -->
+          <div id="drive-shared-students" style="margin-top:12px;display:none;">
+            <p style="font-size:0.82rem;font-weight:600;color:#334155;margin-bottom:4px;">📂 Vocabolari condivisi da colleghe:</p>
+            <div id="drive-shared-list" style="font-size:0.82rem;color:#475569;"></div>
           </div>
         </div>
 
-        <div id="drive-shared-section" style="display:none;margin-top:14px;">
-          <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:8px 12px;font-size:0.82rem;color:#92400e;">
-            📂 Stai usando la cartella condivisa di una collega.
-            <a href="#" onclick="window._switchPersonal();return false;" style="color:#92400e;text-decoration:underline;">Torna alla cartella personale</a>
-          </div>
-        </div>
+        <hr style="margin:14px 0;border:none;border-top:1px solid #e2e8f0;">
 
-        <div style="display:flex;gap:8px;margin-top:16px;">
+        <!-- Aggiungi vocabolario condiviso (quando già connessa) -->
+        <details style="font-size:0.82rem;color:#475569;margin-bottom:12px;">
+          <summary style="cursor:pointer;font-weight:600;">➕ Aggiungi vocabolario condiviso da una collega</summary>
+          <div style="margin-top:8px;">
+            <div style="display:flex;gap:8px;">
+              <input id="shared-code-input-post" type="text" placeholder="Incolla il codice ricevuto…"
+                     style="flex:1;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">
+              <button type="button" class="btn secondary small" onclick="window._connectSharedPost()">Carica</button>
+            </div>
+          </div>
+        </details>
+
+        <div style="display:flex;gap:8px;">
           <button type="button" class="btn secondary" style="flex:1;" onclick="window._disconnectDrive()">
             🔌 Disconnetti
           </button>
@@ -315,7 +362,7 @@
           </button>
         </div>
         <p style="font-size:0.75rem;color:#94a3b8;margin-top:10px;text-align:center;">
-          🔒 Su PC condiviso? Disconnetti al termine per rimuovere i dati dal browser.
+          🔒 Su PC condiviso? Disconnetti al termine: rimuove i tuoi dati dal browser.
         </p>
       </div>
 
@@ -327,11 +374,8 @@
         <button type="button" class="btn primary" style="width:100%;margin-top:12px;" onclick="window._connectDrive()">
           Riprova
         </button>
+        <button type="button" class="btn secondary" style="width:100%;margin-top:8px;" onclick="window._closeDriveModal()">✕ Chiudi</button>
       </div>
-
-      <button type="button" class="btn secondary" style="width:100%;margin-top:12px;" onclick="window._closeDriveModal()">
-        ✕ Chiudi
-      </button>
     </div>
   </div>
 

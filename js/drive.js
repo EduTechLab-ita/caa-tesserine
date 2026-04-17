@@ -9,12 +9,13 @@ const DRIVE_FOLDER_NAME = 'CAArtella';
 
 // ── Stato Drive (persiste in localStorage) ────────────────────────
 let driveState = {
-  enabled:     false,
-  accessToken: null,
-  tokenExpiry: 0,
-  folderId:    null,    // cartella CAArtella/ (propria o condivisa)
-  userEmail:   '',
-  sharedMode:  false,   // true = usa cartella condivisa da collega
+  enabled:        false,
+  accessToken:    null,
+  tokenExpiry:    0,
+  folderId:       null,   // cartella CAArtella/ personale
+  userEmail:      '',
+  ownFileIds:     {},     // { 'EMMA': 'fileId...' }  — file propri (cache)
+  sharedFileIds:  {},     // { 'LUCA': 'fileId...' }  — file condivisi da colleghe
 };
 
 export function isDriveConnected() {
@@ -146,50 +147,82 @@ async function findOrCreateDriveFolder() {
   return created.id;
 }
 
-// ── Usa cartella condivisa tramite codice ─────────────────────────
-export async function connectSharedFolder(folderId) {
+// ── Usa vocabolario condiviso tramite codice (file ID) ───────────
+export async function connectSharedFile(fileId) {
   if (!isDriveConnected()) {
     throw new Error('Prima collega il tuo account Google Drive, poi inserisci il codice.');
   }
+  // Prova a leggere il file direttamente per ID
+  let data;
   try {
-    await driveApiFetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name`);
+    const resp = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+      { headers: { Authorization: 'Bearer ' + driveState.accessToken } }
+    );
+    if (!resp.ok) throw new Error('status ' + resp.status);
+    data = await resp.json();
   } catch(e) {
-    throw new Error('Codice non valido o non sei stata invitata in questa cartella.');
+    throw new Error(
+      'Codice non valido, oppure non sei stata ancora invitata dalla collega a condividere il file. ' +
+      'Assicurati che la collega ti abbia aggiunto come editor nel file Drive prima di inserire il codice.'
+    );
   }
-  driveState.folderId   = folderId;
-  driveState.sharedMode = true;
+
+  const studentName = data.student || 'Alunno condiviso';
+  driveState.sharedFileIds = driveState.sharedFileIds || {};
+  driveState.sharedFileIds[studentName] = fileId;
   saveDriveState();
-  _refreshConnectedPanel();
-  showDrivePanel('connected');
+  return { studentName, dict: data.dict || {}, custom: data.custom || {} };
 }
 
-// ── Torna alla cartella personale ─────────────────────────────────
-export async function switchToPersonalFolder() {
-  driveState.sharedMode = false;
-  driveState.folderId   = await findOrCreateDriveFolder();
-  saveDriveState();
-  _refreshConnectedPanel();
+// ── Ottieni codice da condividere per un alunno (= file ID) ──────
+export async function getStudentShareCode(studentName) {
+  if (!isDriveConnected() || !driveState.folderId) return null;
+  const fileName = `vocabolario-${sanitizeName(studentName || '_anonimo')}.json`;
+  // Prima controlla la cache
+  if (driveState.ownFileIds?.[studentName]) return driveState.ownFileIds[studentName];
+  // Altrimenti cerca su Drive
+  const fileId = await findStudentFile(fileName);
+  if (fileId) {
+    driveState.ownFileIds = driveState.ownFileIds || {};
+    driveState.ownFileIds[studentName] = fileId;
+    saveDriveState();
+  }
+  return fileId;
+}
+
+// ── Controlla se un alunno è condiviso da una collega ────────────
+export function isSharedStudent(studentName) {
+  return !!(driveState.sharedFileIds?.[studentName]);
 }
 
 // ── Salva dizionario alunno su Drive ─────────────────────────────
 export async function saveStudentToDrive(studentName, dict, custom) {
-  if (!isDriveConnected() || !driveState.folderId) return;
+  if (!isDriveConnected()) return;
 
   updateDriveButton('syncing');
-  const fileName = `vocabolario-${sanitizeName(studentName || '_anonimo')}.json`;
 
   try {
-    const fileId = await findStudentFile(fileName);
+    // Determina il file ID: file condiviso o file proprio
+    let fileId = driveState.sharedFileIds?.[studentName] || null;
+    let isShared = !!fileId;
+
+    if (!isShared) {
+      if (!driveState.folderId) return;
+      const fileName = `vocabolario-${sanitizeName(studentName || '_anonimo')}.json`;
+      fileId = driveState.ownFileIds?.[studentName] || await findStudentFile(fileName);
+    }
+
     let mergedDict   = { ...dict };
     let mergedCustom = { ...custom };
 
-    // Merge con versione Drive (evita perdite se due colleghe lavorano in simultanea)
+    // Merge con versione Drive (evita perdite in uso simultaneo)
     if (fileId) {
       try {
         const existing  = await loadFileContent(fileId);
         mergedDict   = { ...existing.dict,   ...dict };
         mergedCustom = { ...existing.custom, ...custom };
-      } catch(e) { /* se il file è corrotto usa i dati locali */ }
+      } catch(e) { /* usa dati locali */ }
     }
 
     const payload = JSON.stringify({
@@ -199,11 +232,25 @@ export async function saveStudentToDrive(studentName, dict, custom) {
       savedAt: new Date().toISOString()
     });
 
-    if (!fileId) await createDriveFile(fileName, payload);
-    else         await updateDriveFile(fileId, payload);
+    if (!fileId) {
+      const fileName = `vocabolario-${sanitizeName(studentName || '_anonimo')}.json`;
+      const result = await createDriveFile(fileName, payload);
+      fileId = result.id;
+      driveState.ownFileIds = driveState.ownFileIds || {};
+      driveState.ownFileIds[studentName] = fileId;
+      saveDriveState();
+    } else {
+      await updateDriveFile(fileId, payload);
+      // Aggiorna cache file ID propri
+      if (!isShared) {
+        driveState.ownFileIds = driveState.ownFileIds || {};
+        driveState.ownFileIds[studentName] = fileId;
+        saveDriveState();
+      }
+    }
 
     updateDriveButton('connected');
-    showDriveToast(`✅ Dizionario di "${studentName || 'Anonimo'}" salvato su Drive`);
+    showDriveToast(`✅ Vocabolario di "${studentName || 'Anonimo'}" salvato su Drive`);
     return mergedDict;
   } catch(err) {
     updateDriveButton('error');
@@ -213,12 +260,23 @@ export async function saveStudentToDrive(studentName, dict, custom) {
 
 // ── Carica dizionario alunno da Drive ────────────────────────────
 export async function loadStudentFromDrive(studentName) {
-  if (!isDriveConnected() || !driveState.folderId) return null;
+  if (!isDriveConnected()) return null;
 
-  const fileName = `vocabolario-${sanitizeName(studentName || '_anonimo')}.json`;
   try {
-    const fileId = await findStudentFile(fileName);
+    // Prima controlla se è un file condiviso
+    const sharedId = driveState.sharedFileIds?.[studentName];
+    if (sharedId) return await loadFileContent(sharedId);
+
+    // Altrimenti cerca nel folder personale
+    if (!driveState.folderId) return null;
+    const fileName = `vocabolario-${sanitizeName(studentName || '_anonimo')}.json`;
+    const fileId   = driveState.ownFileIds?.[studentName] || await findStudentFile(fileName);
     if (!fileId) return null;
+
+    // Aggiorna cache
+    driveState.ownFileIds = driveState.ownFileIds || {};
+    driveState.ownFileIds[studentName] = fileId;
+    saveDriveState();
     return await loadFileContent(fileId);
   } catch(err) {
     console.error('[Drive] Errore caricamento:', err);

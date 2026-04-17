@@ -3,7 +3,7 @@
 // ══════════════════════════════════════════════════════════════════
 
 import {
-  loadDictionary, saveDictionary, lookupWord, rememberWord,
+  loadDictionary, saveDictionary, saveDictionaryForStudent, lookupWord, rememberWord,
   exportDictionary, importDictionaryFromFile,
   getStudentsList, getCurrentStudent, setCurrentStudent, addStudent, removeStudent,
   getLegacyDictionaryCount, loadDictionaryForStudent,
@@ -12,8 +12,8 @@ import {
 import {
   loadDriveConfig, isDriveConnected, connectToDrive, disconnectDrive,
   saveStudentToDrive, loadStudentFromDrive, listStudentsOnDrive,
-  connectSharedFolder, switchToPersonalFolder,
-  openDriveModal, closeDriveModal, showDrivePanel, updateDriveButton, getShareCode,
+  connectSharedFile, isSharedStudent, getStudentShareCode,
+  openDriveModal, closeDriveModal, showDrivePanel, updateDriveButton,
 } from './drive.js';
 
 import { parseText, parseTextToPhrases }                from './parser.js';
@@ -88,30 +88,74 @@ loadDriveConfig(() => {
 });
 
 // Esponi funzioni Drive all'HTML (onclick nei pulsanti del modal)
-window._openDriveModal  = openDriveModal;
+window._openDriveModal  = () => { _refreshDriveSharePanel(); openDriveModal(); };
 window._closeDriveModal = closeDriveModal;
 window._connectDrive    = connectToDrive;
 window._disconnectDrive = () => disconnectDrive(() => { updateStudentSelector(); });
 window._copyShareCode   = () => {
-  const code = getShareCode();
-  if (!code) return;
-  navigator.clipboard.writeText(code).then(() => alert('Codice copiato! Mandalo alle colleghe.'));
+  const code        = document.getElementById('drive-share-code')?.value;
+  const studentName = getCurrentStudent();
+  if (!code || code.startsWith('—') || code.startsWith('⏳')) return;
+
+  const msg =
+`📚 Ti condivido il vocabolario CAA di "${studentName}" su CAArtella.
+
+COSA DEVI FARE (solo la prima volta):
+1. Apri CAArtella: https://edutechlab.it/caa-tesserine/
+2. Clicca il pulsante "Drive" in alto a destra nell'header
+3. Clicca "Collega a Google Drive" e accedi con il tuo account Google
+4. Dopo la connessione, clicca di nuovo "Drive" e apri la sezione "Aggiungi vocabolario condiviso da una collega"
+5. Incolla questo codice: ${code}
+6. Clicca "Carica" — il vocabolario di "${studentName}" apparirà nel selettore alunno
+
+Da quel momento le modifiche si sincronizzano automaticamente tra noi! 🎉
+
+⚠️ Attenzione: devi prima accettare l'invito Drive che ti ho mandato separatamente, altrimenti il codice non funziona.`;
+
+  navigator.clipboard.writeText(msg)
+    .then(() => alert(
+      '✅ Messaggio copiato!\n\n' +
+      'Ora:\n' +
+      '1. Mandalo alla collega (WhatsApp, email…)\n' +
+      '2. Dal pannello Drive qui apri anche Google Drive e condividi il file con lei come "Editor"'
+    ));
 };
+// Collegamento vocabolario condiviso — dalla schermata di login (non ancora connessa)
 window._connectShared = async () => {
   const input = document.getElementById('shared-code-input-pre');
   const code  = input ? input.value.trim() : '';
   if (!code) { alert('Inserisci il codice ricevuto dalla collega.'); return; }
   try {
-    await connectSharedFolder(code);
-    syncStudentListFromDrive();
+    const data = await connectSharedFile(code);
+    addStudent(data.studentName);
+    // Salva i dati ricevuti in locale
+    saveDictionaryForStudent(data.studentName, data.dict);
+    updateStudentSelector(data.studentName);
+    setCurrentStudent(data.studentName);
+    dictionary   = data.dict;
+    customImages = data.custom || {};
+    closeDriveModal();
+    showStatus(`✅ Vocabolario di "${data.studentName}" caricato e sincronizzato!`, 'success');
   } catch(err) {
     alert('❌ ' + err.message);
   }
 };
-window._switchPersonal = async () => {
-  await switchToPersonalFolder();
-  syncStudentListFromDrive();
-  _refreshDriveSharedUI();
+// Collegamento vocabolario condiviso — dalla schermata già connessa
+window._connectSharedPost = async () => {
+  const input = document.getElementById('shared-code-input-post');
+  const code  = input ? input.value.trim() : '';
+  if (!code) { alert('Inserisci il codice ricevuto dalla collega.'); return; }
+  try {
+    const data = await connectSharedFile(code);
+    addStudent(data.studentName);
+    saveDictionaryForStudent(data.studentName, data.dict);
+    updateStudentSelector(data.studentName);
+    if (input) input.value = '';
+    _refreshDriveSharePanel();
+    alert(`✅ Vocabolario di "${data.studentName}" aggiunto! Selezionalo nel selettore alunno.`);
+  } catch(err) {
+    alert('❌ ' + err.message);
+  }
 };
 
 // ══════════════════════════════════════════════════════════════════
@@ -791,26 +835,55 @@ function saveCustomImages(imgs) {
 // ── Sync lista alunni da Drive (aggiunge alunni trovati su Drive) ─
 async function syncStudentListFromDrive() {
   if (!isDriveConnected()) return;
-  _refreshDriveSharedUI();
   const driveStudents = await listStudentsOnDrive();
   driveStudents.forEach(s => { if (s.name !== undefined) addStudent(s.name); });
   updateStudentSelector();
 }
 
-function _refreshDriveSharedUI() {
-  const code = getShareCode();
-  const shareSection  = document.getElementById('drive-share-section');
-  const sharedSection = document.getElementById('drive-shared-section');
+// ── Aggiorna pannello condivisione nel modal Drive ────────────────
+async function _refreshDriveSharePanel() {
+  const studentName   = getCurrentStudent();
+  const nameEl        = document.getElementById('drive-share-student-name');
+  const noStudentEl   = document.getElementById('drive-share-no-student');
+  const withStudentEl = document.getElementById('drive-share-with-student');
   const codeEl        = document.getElementById('drive-share-code');
-  const folderLink    = document.getElementById('drive-folder-link');
+  const fileNameEl    = document.getElementById('drive-share-filename');
 
-  // Mostra sezione giusta in base a modalità
-  const isShared = !!document.getElementById('drive-mode-label')?.textContent.includes('condivisa');
-  if (shareSection)  shareSection.style.display  = isShared ? 'none' : 'block';
-  if (sharedSection) sharedSection.style.display = isShared ? 'block' : 'none';
-  if (codeEl && code) codeEl.value = code;
-  if (folderLink && code) {
-    folderLink.href = `https://drive.google.com/drive/folders/${code}`;
+  if (nameEl) nameEl.textContent = studentName || '—';
+
+  if (!studentName || !isDriveConnected()) {
+    if (noStudentEl)   noStudentEl.style.display   = 'block';
+    if (withStudentEl) withStudentEl.style.display = 'none';
+    return;
+  }
+
+  if (noStudentEl)   noStudentEl.style.display   = 'none';
+  if (withStudentEl) withStudentEl.style.display = 'block';
+
+  // Carica il codice (file ID) per questo alunno
+  if (codeEl) {
+    codeEl.value = '⏳ Carico codice…';
+    const code = await getStudentShareCode(studentName);
+    codeEl.value = code || '— salva prima un vocabolario per questo alunno —';
+    if (fileNameEl) {
+      const safeName = studentName.replace(/[/\\?%*:|"<>]/g, '-');
+      fileNameEl.textContent = `vocabolario-${safeName}.json`;
+    }
+  }
+
+  // Mostra vocabolari condivisi ricevuti
+  const sharedStudentsEl = document.getElementById('drive-shared-students');
+  const sharedListEl     = document.getElementById('drive-shared-list');
+  const students = getStudentsList().filter(n => n && isSharedStudent(n));
+  if (sharedStudentsEl && sharedListEl) {
+    if (students.length > 0) {
+      sharedStudentsEl.style.display = 'block';
+      sharedListEl.innerHTML = students
+        .map(n => `<span style="display:inline-block;background:#ede9fe;color:#5b21b6;border-radius:4px;padding:2px 8px;margin:2px;font-size:0.8rem;">📂 ${n}</span>`)
+        .join('');
+    } else {
+      sharedStudentsEl.style.display = 'none';
+    }
   }
 }
 
