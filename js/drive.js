@@ -5,7 +5,8 @@
 
 const DRIVE_CLIENT_ID   = '374342529488-c123a5j5v8hnfs241udbl55fos5thfq6.apps.googleusercontent.com';
 const DRIVE_SCOPE       = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly email profile';
-const DRIVE_FOLDER_NAME = 'CAArtella';
+const DRIVE_FOLDER_NAME  = 'CAArtella';
+const SHARED_INDEX_FILE  = 'indice-condivisi.json';
 
 // ── Stato Drive (persiste in localStorage) ────────────────────────
 let driveState = {
@@ -109,7 +110,13 @@ function trySilentAuth(onReady, retries = 6) {
         driveState.tokenExpiry = Date.now() + (tokenResponse.expires_in * 1000);
         saveDriveState();
         updateDriveButton('connected');
-        onReady && onReady();
+        // Ripristina indice condivisi (se abbiamo già il folderId), poi chiama onReady
+        const proceed = () => { onReady && onReady(); };
+        if (driveState.folderId) {
+          restoreSharedIndex().then(proceed).catch(proceed);
+        } else {
+          proceed();
+        }
       } else {
         updateDriveButton('error');
       }
@@ -127,9 +134,64 @@ async function initDriveConnection() {
     driveState.folderId = await findOrCreateDriveFolder();
   }
   saveDriveState();
+
+  // Ripristina vocabolari condivisi dall'indice su Drive
+  await restoreSharedIndex();
+
   updateDriveButton('connected');
   _refreshConnectedPanel();
   showDrivePanel('connected');
+}
+
+// ── Indice vocabolari condivisi (indice-condivisi.json) ───────────
+// Struttura: [ { name: 'EMMA', fileId: 'xxx' }, ... ]
+
+async function loadSharedIndex() {
+  if (!driveState.folderId) return [];
+  try {
+    const q = encodeURIComponent(
+      `name='${SHARED_INDEX_FILE}' and '${driveState.folderId}' in parents and trashed=false`
+    );
+    const resp = await driveApiFetch(
+      `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`
+    );
+    if (!resp.files || resp.files.length === 0) return [];
+    const data = await loadFileContent(resp.files[0].id);
+    return Array.isArray(data) ? data : [];
+  } catch(e) {
+    console.warn('[Drive] Errore lettura indice condivisi:', e.message);
+    return [];
+  }
+}
+
+async function saveSharedIndex(entries) {
+  if (!driveState.folderId) return;
+  try {
+    const payload = JSON.stringify(entries);
+    const q = encodeURIComponent(
+      `name='${SHARED_INDEX_FILE}' and '${driveState.folderId}' in parents and trashed=false`
+    );
+    const resp = await driveApiFetch(
+      `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`
+    );
+    if (resp.files && resp.files.length > 0) {
+      await updateDriveFile(resp.files[0].id, payload);
+    } else {
+      await createDriveFile(SHARED_INDEX_FILE, payload);
+    }
+  } catch(e) {
+    console.warn('[Drive] Errore salvataggio indice condivisi:', e.message);
+  }
+}
+
+async function restoreSharedIndex() {
+  const entries = await loadSharedIndex();
+  if (entries.length === 0) return;
+  driveState.sharedFileIds = driveState.sharedFileIds || {};
+  entries.forEach(({ name, fileId }) => {
+    if (name && fileId) driveState.sharedFileIds[name] = fileId;
+  });
+  saveDriveState();
 }
 
 // ── Trova o crea la cartella CAArtella/ ──────────────────────────
@@ -203,6 +265,18 @@ export async function connectSharedFile(fileId) {
   driveState.sharedFileIds = driveState.sharedFileIds || {};
   driveState.sharedFileIds[studentName] = fileId;
   saveDriveState();
+
+  // Aggiorna l'indice su Drive (sopravvive alla pulizia cache)
+  try {
+    const entries = await loadSharedIndex();
+    if (!entries.find(e => e.fileId === fileId)) {
+      entries.push({ name: studentName, fileId });
+      await saveSharedIndex(entries);
+    }
+  } catch(e) {
+    console.warn('[Drive] Errore aggiornamento indice:', e.message);
+  }
+
   return { studentName, dict: data.dict || {}, custom: data.custom || {} };
 }
 
@@ -324,6 +398,8 @@ export async function loadStudentFromDrive(studentName) {
 // ── Elenca alunni presenti su Drive ──────────────────────────────
 export async function listStudentsOnDrive() {
   if (!isDriveConnected() || !driveState.folderId) return [];
+
+  let ownStudents = [];
   try {
     const q = encodeURIComponent(
       `'${driveState.folderId}' in parents and name contains 'vocabolario-' and trashed=false`
@@ -331,14 +407,25 @@ export async function listStudentsOnDrive() {
     const resp = await driveApiFetch(
       `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`
     );
-    return (resp.files || []).map(f => {
+    ownStudents = (resp.files || []).map(f => {
       const name = f.name
         .replace(/^vocabolario-/, '')
         .replace(/\.json$/, '')
         .replace(/^_anonimo$/, '');
       return { name, fileName: f.name };
     });
-  } catch(e) { return []; }
+  } catch(e) {}
+
+  // Aggiunge anche gli studenti condivisi (ripristinati dall'indice)
+  const sharedStudents = Object.keys(driveState.sharedFileIds || {})
+    .filter(name => name && name !== '')
+    .map(name => ({ name, fileName: `vocabolario-${name}.json`, shared: true }));
+
+  // Unifica evitando duplicati
+  const seen = new Set(ownStudents.map(s => s.name));
+  sharedStudents.forEach(s => { if (!seen.has(s.name)) ownStudents.push(s); });
+
+  return ownStudents;
 }
 
 // ── Restituisce il codice da condividere (= folder ID) ────────────
