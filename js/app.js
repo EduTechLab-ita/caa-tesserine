@@ -147,10 +147,10 @@ window._copyShareCode   = async () => {
   const msg =
 `📚 Ti condivido il vocabolario CAA di "${studentName}" tramite CAArtella.
 
-Ora APRI L'APP CAArtella, e per farlo — copia questo link e incollalo nella barra degli indirizzi del browser
-(è la barra in cima al browser dove si scrivono i siti web, non nel motore di ricerca), poi premi Invio:
-
+Ora APRI L'APP CAArtella, e per farlo — copia questo link
 👉 ${shareUrl}
+e incollalo nella barra degli indirizzi del browser
+(è la barra in cima al browser dove si scrivono i siti web, non nel motore di ricerca), poi premi Invio.
 
 Una volta aperta la pagina, si aprirà automaticamente il pannello Drive con il codice già precompilato. Poi:
 1. Clicca "Collega a Google Drive" e accedi con il tuo account Google scolastico
