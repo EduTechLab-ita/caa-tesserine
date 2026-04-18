@@ -169,21 +169,18 @@ async function loadSharedIndex() {
 
 async function saveSharedIndex(entries) {
   if (!driveState.folderId) return;
-  try {
-    const payload = JSON.stringify(entries);
-    const q = encodeURIComponent(
-      `name='${SHARED_INDEX_FILE}' and '${driveState.folderId}' in parents and trashed=false`
-    );
-    const resp = await driveApiFetch(
-      `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`
-    );
-    if (resp.files && resp.files.length > 0) {
-      await updateDriveFile(resp.files[0].id, payload);
-    } else {
-      await createDriveFile(SHARED_INDEX_FILE, payload);
-    }
-  } catch(e) {
-    console.warn('[Drive] Errore salvataggio indice condivisi:', e.message);
+  // Nessun try/catch qui: gli errori emergono al chiamante (connectSharedFile)
+  const payload = JSON.stringify(entries);
+  const q = encodeURIComponent(
+    `name='${SHARED_INDEX_FILE}' and '${driveState.folderId}' in parents and trashed=false`
+  );
+  const resp = await driveApiFetch(
+    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`
+  );
+  if (resp.files && resp.files.length > 0) {
+    await updateDriveFile(resp.files[0].id, payload);
+  } else {
+    await createDriveFile(SHARED_INDEX_FILE, payload);
   }
 }
 
@@ -275,9 +272,13 @@ export async function connectSharedFile(fileId) {
     if (!entries.find(e => e.fileId === fileId)) {
       entries.push({ name: studentName, fileId });
       await saveSharedIndex(entries);
+      console.log('[Drive] ✅ Indice condivisi salvato su Drive:', entries);
+    } else {
+      console.log('[Drive] Indice già aggiornato per:', studentName);
     }
   } catch(e) {
-    console.warn('[Drive] Errore aggiornamento indice:', e.message);
+    console.error('[Drive] ❌ ERRORE indice condivisi:', e.message);
+    showDriveToast('⚠️ Errore salvataggio indice Drive: ' + e.message);
   }
 
   return { studentName, dict: data.dict || {}, custom: data.custom || {} };
