@@ -14,6 +14,7 @@ import {
   saveStudentToDrive, loadStudentFromDrive, listStudentsOnDrive,
   connectSharedFile, isSharedStudent, getStudentShareCode, getDriveFolderUrl,
   openDriveModal, closeDriveModal, showDrivePanel, updateDriveButton, showDriveToast,
+  makeShareReady,
 } from './drive.js';
 
 import { parseText, parseTextToPhrases }                from './parser.js';
@@ -134,18 +135,19 @@ window._openDriveFolder = () => {
 window._closeDriveModal = closeDriveModal;
 window._connectDrive    = connectToDrive;
 window._disconnectDrive = () => disconnectDrive(() => { updateStudentSelector(); });
-window._copyShareCode   = () => {
+window._copyShareCode   = async () => {
   const code        = document.getElementById('drive-share-code')?.value;
   const studentName = getCurrentStudent();
   if (!code || code.startsWith('—') || code.startsWith('⏳')) return;
+
+  // Rende il file pubblicamente leggibile prima di condividere il link
+  await makeShareReady(code);
 
   const shareUrl = `https://edutechlab.it/caa-tesserine/?condividi=${code}`;
   const msg =
 `📚 Ti condivido il vocabolario CAA di "${studentName}" tramite CAArtella.
 
-Il file è già nella sezione "Condivisi con me" del tuo Drive.
-
-APRI L'APP, e per farlo — copia questo link e incollalo nella barra degli indirizzi del browser
+Ora APRI L'APP CAArtella, e per farlo — copia questo link e incollalo nella barra degli indirizzi del browser
 (è la barra in cima al browser dove si scrivono i siti web, non nel motore di ricerca), poi premi Invio:
 
 👉 ${shareUrl}

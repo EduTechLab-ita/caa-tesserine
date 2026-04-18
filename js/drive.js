@@ -147,25 +147,56 @@ async function findOrCreateDriveFolder() {
   return created.id;
 }
 
+// ── Rendi un file pubblicamente leggibile (accesso chiunque con link) ──
+async function makeFilePublic(fileId) {
+  try {
+    await driveApiFetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}/permissions`,
+      'POST',
+      { role: 'reader', type: 'anyone' }
+    );
+  } catch(e) {
+    console.warn('[Drive] makeFilePublic fallito:', e.message);
+  }
+}
+
+// ── Prepara il file per la condivisione (chiamare prima di copiare il messaggio) ─
+export async function makeShareReady(fileId) {
+  if (!isDriveConnected() || !fileId) return;
+  await makeFilePublic(fileId);
+}
+
 // ── Usa vocabolario condiviso tramite codice (file ID) ───────────
 export async function connectSharedFile(fileId) {
   if (!isDriveConnected()) {
     throw new Error('Prima collega il tuo account Google Drive, poi inserisci il codice.');
   }
   // Prova a leggere il file direttamente per ID
+  // (funziona se il file è stato reso pubblico con makeShareReady)
   let data;
   try {
     const resp = await fetch(
       `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
       { headers: { Authorization: 'Bearer ' + driveState.accessToken } }
     );
-    if (!resp.ok) throw new Error('status ' + resp.status);
+    if (!resp.ok) throw new Error('HTTP_' + resp.status);
     data = await resp.json();
   } catch(e) {
-    throw new Error(
-      'Codice non valido, oppure non sei stato/a ancora invitato/a dal/dalla collega a condividere il file. ' +
-      'Assicurati che il/la collega ti abbia aggiunto/a come editor nel file Drive prima di inserire il codice.'
-    );
+    const code = e.message.startsWith('HTTP_') ? e.message.replace('HTTP_', '') : null;
+    if (code === '403') {
+      throw new Error(
+        'Accesso negato (errore 403). La collega deve aggiornare il messaggio di condivisione: ' +
+        'chiedi alla collega di aprire il pannello Drive, selezionare l\'alunno e cliccare di nuovo "Copia messaggio", ' +
+        'poi reinviarti il link aggiornato.'
+      );
+    } else if (code === '404') {
+      throw new Error('Codice non valido (errore 404): file non trovato. Verifica che il codice sia corretto.');
+    } else {
+      throw new Error(
+        'Codice non valido, oppure non sei stato/a ancora invitato/a dal/dalla collega a condividere il file. ' +
+        'Assicurati che il/la collega ti abbia aggiunto/a come editor nel file Drive prima di inserire il codice.'
+      );
+    }
   }
 
   const studentName = data.student || 'Alunno condiviso';
