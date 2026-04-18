@@ -571,8 +571,8 @@ function _refreshConnectedPanel() {
   if (emailEl) emailEl.textContent = driveState.userEmail;
   const modeEl  = document.getElementById('drive-mode-label');
   if (modeEl)  modeEl.textContent = driveState.sharedMode ? '📂 Cartella condivisa' : '📁 Cartella personale';
-  const codeEl  = document.getElementById('drive-share-code');
-  if (codeEl && !driveState.sharedMode) codeEl.value = driveState.folderId || '';
+  // NOTA: drive-share-code NON viene impostato qui — solo _refreshDriveSharePanel (app.js)
+  // lo imposta con il fileId corretto. Impostarlo qui con folderId causava il bug "404".
   // Bottone "Apri CAArtella su Drive" — visibile sempre quando c'è il folderId
   const folderBtn = document.getElementById('drive-open-folder-btn');
   if (folderBtn) folderBtn.style.display = driveState.folderId ? 'inline-flex' : 'none';
