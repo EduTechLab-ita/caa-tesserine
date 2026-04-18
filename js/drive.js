@@ -141,6 +141,9 @@ async function initDriveConnection() {
   updateDriveButton('connected');
   _refreshConnectedPanel();
   showDrivePanel('connected');
+
+  // Notifica app.js che la connessione è completa (incluso il ripristino dell'indice)
+  document.dispatchEvent(new CustomEvent('caa-drive-connected'));
 }
 
 // ── Indice vocabolari condivisi (indice-condivisi.json) ───────────

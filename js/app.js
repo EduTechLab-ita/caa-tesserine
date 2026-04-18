@@ -84,7 +84,12 @@ initStudentSelector();
 
 // ── Inizializza Drive ───────────────────────────────────────────
 loadDriveConfig(() => {
-  // Drive connesso: aggiorna lista alunni da Drive
+  // Drive connesso al caricamento pagina (token già valido o silent auth)
+  syncStudentListFromDrive();
+});
+
+// Drive connesso dopo login manuale (click sul pulsante) — es. Chromebook pulito
+document.addEventListener('caa-drive-connected', () => {
   syncStudentListFromDrive();
 });
 
