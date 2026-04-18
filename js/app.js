@@ -163,7 +163,7 @@ Da quel momento le nostre modifiche si sincronizzano automaticamente 🎉
 ⚠️ Se il link non si apre correttamente, puoi usare il codice manuale:
 Apri https://edutechlab.it/caa-tesserine/, clicca "Drive" in alto a destra, collega il tuo account Google, poi incolla questo codice nel box blu "Hai ricevuto un vocabolario?":
 
-*** ${code} ***
+👉 ${code}
 
 e clicca Carica.`;
 
