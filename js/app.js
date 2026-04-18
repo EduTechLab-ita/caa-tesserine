@@ -933,10 +933,6 @@ async function _refreshDriveSharePanel() {
   if (noStudentEl)   noStudentEl.style.display   = 'none';
   if (withStudentEl) withStudentEl.style.display = 'block';
 
-  // Mostra/nasconde bottone "Apri CAArtella su Drive"
-  const folderBtn = document.getElementById('drive-open-folder-btn');
-  if (folderBtn) folderBtn.style.display = getDriveFolderUrl() ? 'inline-flex' : 'none';
-
   // Carica il codice (file ID) per questo alunno
   if (codeEl) {
     codeEl.value = '⏳ Carico codice…';

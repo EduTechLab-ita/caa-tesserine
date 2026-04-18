@@ -322,8 +322,15 @@
         <div class="drive-status-bar ok">
           ✅ Connesso — i vocabolari vengono salvati automaticamente
         </div>
-        <div style="font-size:0.85rem;color:#475569;margin:10px 0 14px;padding:8px 12px;background:#f8fafc;border-radius:6px;">
+        <div style="font-size:0.85rem;color:#475569;margin:10px 0 8px;padding:8px 12px;background:#f8fafc;border-radius:6px;">
           👤 <span id="drive-user-email"></span>
+        </div>
+
+        <!-- Bottone cartella Drive — sempre visibile quando connesso -->
+        <div style="margin-bottom:12px;">
+          <button type="button" id="drive-open-folder-btn" class="btn secondary small" onclick="window._openDriveFolder()" style="display:none;">
+            📂 Apri CAArtella su Drive
+          </button>
         </div>
 
         <!-- Condivisione per-alunno -->
@@ -340,8 +347,7 @@
                 Clicca <b>"Copia messaggio"</b> qui sotto — il testo con le istruzioni è già pronto
               </li>
               <li style="margin-bottom:6px;">
-                <button type="button" id="drive-open-folder-btn" class="btn primary small" onclick="window._openDriveFolder()" style="display:none;vertical-align:middle;">📂 Apri CAArtella su Drive</button>
-                <span style="vertical-align:middle;"> — poi segui questi passi:</span>
+                Clicca il pulsante <b>📂 Apri CAArtella su Drive</b> qui sopra — poi segui questi passi:
                 <ol type="a" style="margin-top:6px;padding-left:16px;color:#475569;">
                   <li>Clicca sui <b>⋮ tre puntini</b> accanto al file <b id="drive-share-filename"></b>, oppure fai <b>clic destro</b> col mouse</li>
                   <li>Scegli <b>Condividi</b></li>

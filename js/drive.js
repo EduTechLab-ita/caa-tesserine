@@ -445,9 +445,13 @@ export function disconnectDrive(onDisconnect) {
   if (driveState.accessToken && typeof google !== 'undefined' && google.accounts) {
     google.accounts.oauth2.revoke(driveState.accessToken);
   }
+  // Preserva sharedFileIds: anche dopo disconnect, i vocabolari condivisi ricevuti
+  // devono tornare automaticamente alla prossima connessione (es. se si cancella un alunno per errore)
+  const savedSharedIds = driveState.sharedFileIds || {};
   driveState = {
     enabled: false, accessToken: null, tokenExpiry: 0,
-    folderId: null, userEmail: '', sharedMode: false
+    folderId: null, userEmail: '', sharedMode: false,
+    sharedFileIds: savedSharedIds,
   };
   saveDriveState();
   updateDriveButton();
@@ -568,6 +572,9 @@ function _refreshConnectedPanel() {
   if (modeEl)  modeEl.textContent = driveState.sharedMode ? '📂 Cartella condivisa' : '📁 Cartella personale';
   const codeEl  = document.getElementById('drive-share-code');
   if (codeEl && !driveState.sharedMode) codeEl.value = driveState.folderId || '';
+  // Bottone "Apri CAArtella su Drive" — visibile sempre quando c'è il folderId
+  const folderBtn = document.getElementById('drive-open-folder-btn');
+  if (folderBtn) folderBtn.style.display = driveState.folderId ? 'inline-flex' : 'none';
 }
 
 // ── UI: Toast salvataggio ─────────────────────────────────────────
