@@ -153,7 +153,9 @@ window._copyShareCode   = async () => {
 `📚 Ti condivido il vocabolario CAA di "${studentName}" tramite CAArtella.
 
 Ora APRI L'APP CAArtella, e per farlo — copia questo link
+
 👉 ${shareUrl}
+
 e incollalo nella barra degli indirizzi del browser
 (è la barra in cima al browser dove si scrivono i siti web, non nel motore di ricerca), poi premi Invio.
 
@@ -167,6 +169,7 @@ Da quel momento le nostre modifiche si sincronizzano automaticamente 🎉
 ---
 ⚠️ Se il link non si apre correttamente, puoi usare il codice manuale:
 Apri https://edutechlab.it/caa-tesserine/, clicca "Drive" in alto a destra, collega il tuo account Google, poi incolla questo codice nel box blu "Hai ricevuto un vocabolario?":
+
 
 👉 ${code}
 
