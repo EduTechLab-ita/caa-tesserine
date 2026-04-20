@@ -200,6 +200,7 @@ window._connectShared = async () => {
     addStudent(data.studentName);
     // Salva i dati ricevuti in locale
     saveDictionaryForStudent(data.studentName, data.dict);
+    saveCustomImagesForStudent(data.studentName, data.custom || {});
     updateStudentSelector(data.studentName);
     setCurrentStudent(data.studentName);
     dictionary   = data.dict;
@@ -219,6 +220,7 @@ window._connectSharedPost = async () => {
     const data = await connectSharedFile(code);
     addStudent(data.studentName);
     saveDictionaryForStudent(data.studentName, data.dict);
+    saveCustomImagesForStudent(data.studentName, data.custom || {});
     updateStudentSelector(data.studentName);
     if (input) input.value = '';
     sessionStorage.removeItem(PENDING_SHARE_KEY); // codice usato, pulizia
@@ -900,7 +902,10 @@ function loadCustomImagesForStudent(studentName) {
 }
 
 function saveCustomImages(imgs) {
-  const studentName = getCurrentStudent();
+  saveCustomImagesForStudent(getCurrentStudent(), imgs);
+}
+
+function saveCustomImagesForStudent(studentName, imgs) {
   const key = studentName === '' ? 'caa_custom_images_v1' : `caa_custom_v2_${studentName}`;
   localStorage.setItem(key, JSON.stringify(imgs));
 }
