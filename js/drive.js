@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════════════════════════════
 
 const DRIVE_CLIENT_ID   = '374342529488-c123a5j5v8hnfs241udbl55fos5thfq6.apps.googleusercontent.com';
-const DRIVE_SCOPE       = 'https://www.googleapis.com/auth/drive.file email profile';
+const DRIVE_SCOPE       = 'https://www.googleapis.com/auth/drive email profile';
 const DRIVE_FOLDER_NAME  = 'CAArtella';
 const SHARED_INDEX_FILE  = 'indice-condivisi.json';
 // API key per leggere file pubblici (drive.file non può accedere a file di altri utenti)
@@ -240,9 +240,8 @@ export async function connectSharedFile(fileId) {
   // (funziona se il file è stato reso pubblico con makeShareReady)
   let data;
   try {
-    // Accesso via API key (file è pubblico grazie a makeFilePublic).
-    // drive.file scope non può leggere file di altri utenti anche se pubblici.
-    data = await loadPublicFileContent(fileId);
+    // Con drive scope il bearer token può leggere file pubblici e condivisi
+    data = await loadFileContent(fileId);
   } catch(e) {
     const code = e.message.startsWith('HTTP_') ? e.message.replace('HTTP_', '') : null;
     if (code === '403') {
@@ -377,9 +376,9 @@ export async function loadStudentFromDrive(studentName) {
   if (!isDriveConnected()) return null;
 
   try {
-    // Prima controlla se è un file condiviso (pubblico → usa API key, non Bearer)
+    // Con drive scope il bearer token può leggere file condivisi e pubblici
     const sharedId = driveState.sharedFileIds?.[studentName];
-    if (sharedId) return await loadPublicFileContent(sharedId);
+    if (sharedId) return await loadFileContent(sharedId);
 
     // Altrimenti cerca nel folder personale
     if (!driveState.folderId) return null;
