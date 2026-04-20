@@ -222,12 +222,15 @@ window._connectSharedPost = async () => {
     saveDictionaryForStudent(data.studentName, data.dict);
     saveCustomImagesForStudent(data.studentName, data.custom || {});
     updateStudentSelector(data.studentName);
+    setCurrentStudent(data.studentName);
+    dictionary   = data.dict;
+    customImages = data.custom || {};
     if (input) input.value = '';
     sessionStorage.removeItem(PENDING_SHARE_KEY); // codice usato, pulizia
     const banner = document.getElementById('drive-incoming-banner');
     if (banner) banner.style.display = 'none';
     _refreshDriveSharePanel();
-    alert(`✅ Vocabolario di "${data.studentName}" aggiunto! Selezionalo nel selettore alunno.`);
+    showStatus(`✅ Vocabolario di "${data.studentName}" caricato e attivo!`, 'success');
   } catch(err) {
     alert('❌ ' + err.message);
   }
