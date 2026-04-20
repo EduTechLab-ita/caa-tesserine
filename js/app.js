@@ -637,11 +637,12 @@ async function openModal(tile) {
 
   // ── Rimuovi parola dal dizionario ─────────────────────────────
   const forgetBtn = document.createElement('button');
-  forgetBtn.className   = 'btn secondary small';
-  forgetBtn.style.cssText = 'margin-top:0.5rem;color:#dc2626;border-color:#dc2626;';
+  forgetBtn.className   = 'btn danger small';
+  forgetBtn.style.marginTop = '0.5rem';
   forgetBtn.textContent = '🗑️ Rimuovi dal dizionario';
-  forgetBtn.title       = 'Elimina questa parola dal vocabolario salvato. La prossima volta verrà ricercata di nuovo su ARASAAC.';
+  forgetBtn.title       = 'Elimina questa parola dal vocabolario salvato. Operazione irreversibile.';
   forgetBtn.addEventListener('click', () => {
+    if (!confirm(`Rimuovere "${tile.word}" dal dizionario?\n\nQuesta operazione è irreversibile: la tessera scomparirà dal vocabolario salvato.`)) return;
     const wordKey = tile.word.toUpperCase();
     const updated = { ...dictionary };
     delete updated[wordKey];
