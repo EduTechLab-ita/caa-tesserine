@@ -52,6 +52,7 @@ const selRows        = $('sel-rows');
 const selSize        = $('sel-size');
 const chkStop        = $('chk-stopwords');
 const btnGenerate    = $('btn-generate');
+const btnPrintVocab  = $('btn-print-vocab');
 const statusDiv      = $('status');
 const secPreview     = $('sec-preview');
 const lblCount       = $('lbl-count');
@@ -67,6 +68,7 @@ const modalClose     = $('modal-close');
 
 // ── Event listeners ────────────────────────────────────────────
 btnGenerate.addEventListener('click',    handleGenerate);
+btnPrintVocab.addEventListener('click',  handlePrintVocab);
 btnPdf.addEventListener('click',         handleExportPDF);
 btnExportDict.addEventListener('click',  () => exportAll(dictionary, customImages));
 fileImportDict.addEventListener('change', handleImportDict);
@@ -361,6 +363,45 @@ async function handleGenerate() {
 }
 
 // ══════════════════════════════════════════════════════════════════
+//  STAMPA VOCABOLARIO COMPLETO
+// ══════════════════════════════════════════════════════════════════
+function handlePrintVocab() {
+  const allWords = new Set([
+    ...Object.keys(dictionary),
+    ...Object.keys(customImages),
+  ]);
+
+  if (allWords.size === 0) {
+    showStatus('Il vocabolario è vuoto. Prima genera alcune tessere.', 'error');
+    return;
+  }
+
+  currentOptions = {
+    cols:     parseInt(selCols.value),
+    rows:     parseInt(selRows.value),
+    tileSize: parseInt(selSize.value),
+  };
+
+  lemmaLog = {};
+  tiles = [...allWords].sort().map(word => {
+    const id           = dictionary[word] ?? null;
+    const customDataURL = customImages[word] ?? null;
+    return {
+      word,
+      id,
+      imageUrl:  customDataURL || (id ? getPictogramUrl(id) : null),
+      dataURL:   customDataURL || null,
+      alts:      [],
+      lemma:     null,
+      phraseEnd: false,
+    };
+  });
+
+  renderPages();
+  showStatus(`📖 Vocabolario completo: ${tiles.length} tessere. Clicca "Scarica PDF" per stamparlo.`, 'success');
+}
+
+// ══════════════════════════════════════════════════════════════════
 //  LAYOUT FRASE-AWARE
 //  Produce array di pagine; ogni pagina è array di righe;
 //  ogni riga è array di (tile | null).  null = cella vuota (fine frase).
@@ -593,6 +634,31 @@ async function openModal(tile) {
     }
   });
   customSection.appendChild(uploadLabel);
+
+  // ── Rimuovi parola dal dizionario ─────────────────────────────
+  const forgetBtn = document.createElement('button');
+  forgetBtn.className   = 'btn secondary small';
+  forgetBtn.style.cssText = 'margin-top:0.5rem;color:#dc2626;border-color:#dc2626;';
+  forgetBtn.textContent = '🗑️ Rimuovi dal dizionario';
+  forgetBtn.title       = 'Elimina questa parola dal vocabolario salvato. La prossima volta verrà ricercata di nuovo su ARASAAC.';
+  forgetBtn.addEventListener('click', () => {
+    const wordKey = tile.word.toUpperCase();
+    const updated = { ...dictionary };
+    delete updated[wordKey];
+    dictionary = updated;
+    saveDictionary(dictionary);
+    if (customImages[wordKey]) {
+      customImages = removeCustomImage(customImages, tile.word);
+      saveCustomImages(customImages);
+    }
+    scheduleDriveSync();
+    tiles = tiles.filter(t => t.word !== tile.word);
+    closeModal();
+    renderPages();
+    showStatus(`🗑️ "${tile.word}" rimosso dal vocabolario.`, 'success');
+  });
+  customSection.appendChild(forgetBtn);
+
   modalAlts.appendChild(customSection);
 
   // ── Se nessun risultato ARASAAC → messaggio + stop ────────────
