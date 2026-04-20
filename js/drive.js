@@ -7,6 +7,9 @@ const DRIVE_CLIENT_ID   = '374342529488-c123a5j5v8hnfs241udbl55fos5thfq6.apps.go
 const DRIVE_SCOPE       = 'https://www.googleapis.com/auth/drive.file email profile';
 const DRIVE_FOLDER_NAME  = 'CAArtella';
 const SHARED_INDEX_FILE  = 'indice-condivisi.json';
+// API key per leggere file pubblici (drive.file non può accedere a file di altri utenti)
+// Chiave ristretta a: dominio edutechlab.it + solo Google Drive API
+const DRIVE_API_KEY     = 'AIzaSyAqz5FMvBhhcRQHHDLYSdHji8a8oaHas2A';
 
 // ── Stato Drive (persiste in localStorage) ────────────────────────
 let driveState = {
@@ -237,17 +240,14 @@ export async function connectSharedFile(fileId) {
   // (funziona se il file è stato reso pubblico con makeShareReady)
   let data;
   try {
-    const resp = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-      { headers: { Authorization: 'Bearer ' + driveState.accessToken } }
-    );
-    if (!resp.ok) throw new Error('HTTP_' + resp.status);
-    data = await resp.json();
+    // Accesso via API key (file è pubblico grazie a makeFilePublic).
+    // drive.file scope non può leggere file di altri utenti anche se pubblici.
+    data = await loadPublicFileContent(fileId);
   } catch(e) {
     const code = e.message.startsWith('HTTP_') ? e.message.replace('HTTP_', '') : null;
     if (code === '403') {
       throw new Error(
-        'Accesso negato (errore 403). La collega deve aggiornare il messaggio di condivisione: ' +
+        'Accesso negato (errore 403). La collega deve condividere di nuovo: ' +
         'chiedi alla collega di aprire il pannello Drive, selezionare l\'alunno e cliccare di nuovo "Copia messaggio", ' +
         'poi reinviarti il link aggiornato.'
       );
@@ -255,8 +255,7 @@ export async function connectSharedFile(fileId) {
       throw new Error('Codice non valido (errore 404): file non trovato. Verifica che il codice sia corretto.');
     } else {
       throw new Error(
-        'Codice non valido, oppure non sei stato/a ancora invitato/a dal/dalla collega a condividere il file. ' +
-        'Assicurati che il/la collega ti abbia aggiunto/a come editor nel file Drive prima di inserire il codice.'
+        'Impossibile caricare il vocabolario. Chiedi alla collega di cliccare di nuovo "Copia messaggio" e reinviarti il link.'
       );
     }
   }
@@ -378,9 +377,9 @@ export async function loadStudentFromDrive(studentName) {
   if (!isDriveConnected()) return null;
 
   try {
-    // Prima controlla se è un file condiviso
+    // Prima controlla se è un file condiviso (pubblico → usa API key, non Bearer)
     const sharedId = driveState.sharedFileIds?.[studentName];
-    if (sharedId) return await loadFileContent(sharedId);
+    if (sharedId) return await loadPublicFileContent(sharedId);
 
     // Altrimenti cerca nel folder personale
     if (!driveState.folderId) return null;
@@ -491,6 +490,17 @@ async function loadFileContent(fileId) {
     { headers: { Authorization: 'Bearer ' + driveState.accessToken } }
   );
   if (!resp.ok) throw new Error('Lettura Drive fallita (' + resp.status + ')');
+  return resp.json();
+}
+
+// Legge un file pubblico (reso tale da makeFilePublic) usando API key.
+// Necessario perché drive.file scope non può accedere a file creati da altri utenti,
+// nemmeno se pubblici. L'API key bypassa la restrizione OAuth per la lettura pubblica.
+async function loadPublicFileContent(fileId) {
+  const resp = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${DRIVE_API_KEY}`
+  );
+  if (!resp.ok) throw new Error('HTTP_' + resp.status);
   return resp.json();
 }
 
