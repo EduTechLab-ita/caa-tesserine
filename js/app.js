@@ -154,15 +154,24 @@ window._copyShareCode   = async () => {
   const msg =
 `📚 Ti condivido il vocabolario CAA di "${studentName}" tramite CAArtella.
 
-Ora APRI L'APP CAArtella, e per farlo — copia questo link
+Ora APRI L'APP CAArtella — copia SOLO questo link:
 
-👉 ${shareUrl}
+
+👉  ${shareUrl}
+
 
 e incollalo nella barra degli indirizzi del browser
-(è la barra in cima al browser dove si scrivono i siti web, non nel motore di ricerca), poi premi Invio.
+(la barra in cima al browser dove si scrivono i siti web, non nel motore di ricerca), poi premi Invio.
 
 Una volta aperta la pagina, si aprirà automaticamente il pannello Drive con il codice già precompilato. Poi:
+
 1. Clicca "Collega a Google Drive" e accedi con il tuo account Google scolastico
+
+   ⚠️ AVVISO NORMALE — La prima volta Google mostra la schermata "Questa app non è verificata".
+   Non è un virus. È normale per le app scolastiche interne.
+   Come procedere: clicca "Avanzate" (in basso a sinistra) → poi "Vai su edutechlab.it (non sicuro)" → autorizza.
+   Questo avviso compare SOLO la prima volta. Dopo, il collegamento è automatico.
+
 2. Nel box giallo/blu vedrai il codice già pronto — clicca "Carica"
 3. Il vocabolario di "${studentName}" apparirà nel selettore alunno!
 
@@ -173,7 +182,8 @@ Da quel momento le nostre modifiche si sincronizzano automaticamente 🎉
 Apri https://edutechlab.it/caa-tesserine/, clicca "Drive" in alto a destra, collega il tuo account Google, poi incolla questo codice nel box blu "Hai ricevuto un vocabolario?":
 
 
-👉 ${code}
+👉  ${code}
+
 
 e clicca Carica.`;
 
