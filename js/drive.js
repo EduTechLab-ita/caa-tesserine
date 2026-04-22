@@ -9,7 +9,7 @@ const DRIVE_FOLDER_NAME  = 'CAArtella';
 const SHARED_INDEX_FILE  = 'indice-condivisi.json';
 // API key per leggere file pubblici (drive.file non può accedere a file di altri utenti)
 // Chiave ristretta a: dominio edutechlab.it + solo Google Drive API
-const DRIVE_API_KEY     = 'AIzaSyAqz5FMvBhhcRQHHDLYSdHji8a8oaHas2A';
+const DRIVE_API_KEY     = 'AIzaSyA91DPSWxASroIFzMvg2fDr2vYjEt0xQpM';
 
 // ── Stato Drive (persiste in localStorage) ────────────────────────
 let driveState = {
