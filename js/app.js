@@ -79,6 +79,7 @@ document.addEventListener('keydown',     e => { if (e.key === 'Escape') { closeM
 // Info panel
 $('btn-info').addEventListener('click',   openInfo);
 $('info-close').addEventListener('click', closeInfo);
+$('info-close-bottom').addEventListener('click', closeInfo);
 $('info-overlay').addEventListener('click', e => { if (e.target === $('info-overlay')) closeInfo(); });
 
 // ── Inizializza selettore alunno ────────────────────────────────
