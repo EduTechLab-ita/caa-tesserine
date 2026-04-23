@@ -866,7 +866,7 @@ async function generatePDF() {
     doc.setFontSize(4.5);
     doc.setTextColor(170, 170, 170);
     doc.text(
-      'Pittogrammi ARASAAC © Gobierno de Aragón – Licenza CC BY-NC-SA 4.0 – arasaac.org',
+      'Pittogrammi ARASAAC \u00a9 Gobierno de Arag\u00f3n \u2013 Licenza CC BY-NC-SA 4.0 \u2013 arasaac.org  |  \u00a9 2026 EduTechLab \u2013 Fabio Rizzotto \u2013 Tutti i diritti riservati  |  App a scopo didattico non commerciale  |  D.Lgs. 196/2003',
       PAGE_W / 2, PAGE_H - 2.5,
       { align: 'center' }
     );
