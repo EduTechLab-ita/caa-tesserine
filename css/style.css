@@ -652,4 +652,12 @@ footer a:hover { text-decoration: underline; }
 /* ── NO-PRINT ─────────────────────────────────────────────────── */
 @media print {
   .no-print { display: none !important; }
+  footer {
+    font-size: 0.6rem;
+    padding: 0.5rem 1rem;
+    color: #aaa;
+    border-top: 1px solid #ddd;
+    margin-top: 1rem;
+  }
+  footer a { color: #aaa; text-decoration: none; }
 }
