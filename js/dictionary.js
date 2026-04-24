@@ -132,6 +132,30 @@ export function getLegacyDictionaryCount() {
 }
 
 // ══════════════════════════════════════════════════════════════════
+//  ETICHETTE PERSONALIZZATE PER ALUNNO
+//  Permettono di sovrascrivere il testo mostrato su una tessera
+//  senza cambiare la parola usata per la ricerca su ARASAAC.
+//  Storage: caa_labels_v1_[nomeAlunno]
+// ══════════════════════════════════════════════════════════════════
+
+function labelsKey(studentName) {
+  return studentName === '' ? 'caa_labels_v1_anon' : `caa_labels_v1_${studentName}`;
+}
+
+/** Carica le etichette per un alunno specifico. */
+export function loadLabelsForStudent(studentName) {
+  try {
+    const stored = localStorage.getItem(labelsKey(studentName));
+    return stored ? JSON.parse(stored) : {};
+  } catch { return {}; }
+}
+
+/** Salva le etichette per un alunno specifico. */
+export function saveLabelsForStudent(studentName, labels) {
+  localStorage.setItem(labelsKey(studentName), JSON.stringify(labels));
+}
+
+// ══════════════════════════════════════════════════════════════════
 //  EXPORT / IMPORT
 // ══════════════════════════════════════════════════════════════════
 

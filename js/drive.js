@@ -279,7 +279,7 @@ export async function connectSharedFile(fileId) {
     showDriveToast('⚠️ Errore salvataggio indice Drive: ' + e.message);
   }
 
-  return { studentName, dict: data.dict || {}, custom: data.custom || {} };
+  return { studentName, dict: data.dict || {}, custom: data.custom || {}, labels: data.labels || {} };
 }
 
 // ── Ottieni codice da condividere per un alunno (= file ID) ──────
@@ -310,7 +310,7 @@ export function getDriveFolderUrl() {
 }
 
 // ── Salva dizionario alunno su Drive ─────────────────────────────
-export async function saveStudentToDrive(studentName, dict, custom) {
+export async function saveStudentToDrive(studentName, dict, custom, labels = {}) {
   if (!isDriveConnected()) return;
 
   updateDriveButton('syncing');
@@ -328,6 +328,7 @@ export async function saveStudentToDrive(studentName, dict, custom) {
 
     let mergedDict   = { ...dict };
     let mergedCustom = { ...custom };
+    let mergedLabels = { ...labels };
 
     // Merge con versione Drive (evita perdite in uso simultaneo)
     if (fileId) {
@@ -335,12 +336,14 @@ export async function saveStudentToDrive(studentName, dict, custom) {
         const existing  = await loadFileContent(fileId);
         mergedDict   = { ...existing.dict,   ...dict };
         mergedCustom = { ...existing.custom, ...custom };
+        mergedLabels = { ...(existing.labels || {}), ...labels };
       } catch(e) { /* usa dati locali */ }
     }
 
     const payload = JSON.stringify({
       dict:    mergedDict,
       custom:  mergedCustom,
+      labels:  mergedLabels,
       student: studentName,
       savedAt: new Date().toISOString()
     });

@@ -81,8 +81,8 @@ export function fileToDataURL(file) {
  * @param {Object} dict   - dizionario ARASAAC { PAROLA: id }
  * @param {Object} imgs   - immagini custom { PAROLA: dataURL }
  */
-export function exportAll(dict, imgs) {
-  const payload = { arasaac: dict, custom: imgs, version: 1 };
+export function exportAll(dict, imgs, labels = {}) {
+  const payload = { arasaac: dict, custom: imgs, labels, version: 2 };
   const blob    = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url     = URL.createObjectURL(blob);
   const a       = Object.assign(document.createElement('a'), {
@@ -104,11 +104,12 @@ export async function importAll(file) {
     reader.onload = e => {
       try {
         const data = JSON.parse(e.target.result);
-        if (data.version === 1 && data.arasaac) {
-          resolve({ dict: data.arasaac || {}, imgs: data.custom || {} });
+        if (data.arasaac) {
+          // Formato v1 (solo dict+imgs) o v2 (con labels)
+          resolve({ dict: data.arasaac || {}, imgs: data.custom || {}, labels: data.labels || {} });
         } else {
-          // Formato vecchio: solo dizionario ARASAAC
-          resolve({ dict: data, imgs: {} });
+          // Formato legacy: solo dizionario ARASAAC senza struttura
+          resolve({ dict: data, imgs: {}, labels: {} });
         }
       } catch { reject(new Error('File JSON non valido')); }
     };

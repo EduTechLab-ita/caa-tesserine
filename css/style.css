@@ -477,6 +477,53 @@ footer a:hover { text-decoration: underline; }
   pointer-events: none;
 }
 
+/* ── BADGE ETICHETTA PERSONALIZZATA ────────────────────────────── */
+.label-badge {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  font-size: 9px;
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* ── SEZIONE MODIFICA ETICHETTA NEL MODAL ──────────────────────── */
+.label-edit-section {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px dashed #e2e8f0;
+}
+
+.label-edit-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.label-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.label-edit-input {
+  flex: 1;
+  padding: 0.35rem 0.6rem;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.label-edit-input:focus {
+  border-color: #6366f1;
+}
+
 /* ── UPLOAD IMMAGINE CUSTOM NEL MODAL ─────────────────────────── */
 .custom-upload-section {
   margin-bottom: 1rem;

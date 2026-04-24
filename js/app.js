@@ -7,6 +7,7 @@ import {
   exportDictionary, importDictionaryFromFile,
   getStudentsList, getCurrentStudent, setCurrentStudent, addStudent, removeStudent,
   getLegacyDictionaryCount, loadDictionaryForStudent,
+  loadLabelsForStudent, saveLabelsForStudent,
 } from './dictionary.js';
 
 import {
@@ -38,7 +39,8 @@ let _driveSaveTimer = null; // debounce per sync Drive
 let tiles          = [];
 /** Parole che sono state lemmatizzate: {ORIGINALE → lemma} */
 let lemmaLog       = {};
-let customImages = loadCustomImagesForStudent(getCurrentStudent());
+let customImages  = loadCustomImagesForStudent(getCurrentStudent());
+let customLabels  = loadLabelsForStudent(getCurrentStudent());
 let currentOptions = { cols: 4, rows: 5, tileSize: 45 };
 
 // ── Riferimenti DOM ────────────────────────────────────────────
@@ -70,7 +72,7 @@ const modalClose     = $('modal-close');
 btnGenerate.addEventListener('click',    handleGenerate);
 btnPrintVocab.addEventListener('click',  handlePrintVocab);
 btnPdf.addEventListener('click',         handleExportPDF);
-btnExportDict.addEventListener('click',  () => exportAll(dictionary, customImages));
+btnExportDict.addEventListener('click',  () => exportAll(dictionary, customImages, customLabels));
 fileImportDict.addEventListener('change', handleImportDict);
 modalClose.addEventListener('click',     closeModal);
 modalOverlay.addEventListener('click',   e => { if (e.target === modalOverlay) closeModal(); });
@@ -214,10 +216,12 @@ window._connectShared = async () => {
     // Salva i dati ricevuti in locale
     saveDictionaryForStudent(data.studentName, data.dict);
     saveCustomImagesForStudent(data.studentName, data.custom || {});
+    saveLabelsForStudent(data.studentName, data.labels || {});
     updateStudentSelector(data.studentName);
     setCurrentStudent(data.studentName);
     dictionary   = data.dict;
     customImages = data.custom || {};
+    customLabels = data.labels || {};
     closeDriveModal();
     showStatus(`✅ Vocabolario di "${data.studentName}" caricato e sincronizzato!`, 'success');
   } catch(err) {
@@ -234,10 +238,12 @@ window._connectSharedPost = async () => {
     addStudent(data.studentName);
     saveDictionaryForStudent(data.studentName, data.dict);
     saveCustomImagesForStudent(data.studentName, data.custom || {});
+    saveLabelsForStudent(data.studentName, data.labels || {});
     updateStudentSelector(data.studentName);
     setCurrentStudent(data.studentName);
     dictionary   = data.dict;
     customImages = data.custom || {};
+    customLabels = data.labels || {};
     if (input) input.value = '';
     sessionStorage.removeItem(PENDING_SHARE_KEY); // codice usato, pulizia
     const banner = document.getElementById('drive-incoming-banner');
@@ -540,12 +546,22 @@ function buildTileElement(tile) {
     imgWrap.appendChild(ph);
   }
 
-  // Zona parola
+  // Zona parola (usa etichetta personalizzata se presente)
   const wordEl = document.createElement('div');
   wordEl.className   = 'tile-word';
-  wordEl.textContent = tile.word;
+  const customLabel  = customLabels[tile.word.toUpperCase()];
+  wordEl.textContent = customLabel || tile.word;
 
-  // Se è stata usata la forma base (lemma), mostra un piccolo badge
+  // Badge ✏️ se l'etichetta è stata personalizzata
+  if (customLabel) {
+    const lblBadge = document.createElement('span');
+    lblBadge.className   = 'label-badge';
+    lblBadge.title       = `Etichetta personalizzata (parola cercata: "${tile.word}")`;
+    lblBadge.textContent = '✏️';
+    el.appendChild(lblBadge);
+  }
+
+  // Badge "≈" se è stata usata la forma base (lemma)
   if (tile.lemma) {
     const badge = document.createElement('span');
     badge.className = 'lemma-badge';
@@ -597,7 +613,64 @@ async function openModal(tile) {
   // ── Render modal ──────────────────────────────────────────────
   modalAlts.innerHTML = '';
 
-  // ── Sezione immagine personalizzata ──────────────────────────
+  // ── Sezione modifica etichetta (SEMPRE visibile) ──────────────
+  const labelSection = document.createElement('div');
+  labelSection.className = 'label-edit-section';
+
+  const labelTitle = document.createElement('p');
+  labelTitle.className = 'label-edit-title';
+  labelTitle.textContent = '✏️ Testo sulla tessera';
+  labelSection.appendChild(labelTitle);
+
+  const currentLabel = customLabels[tile.word.toUpperCase()] || '';
+
+  const labelRow = document.createElement('div');
+  labelRow.className = 'label-edit-row';
+
+  const labelInput = document.createElement('input');
+  labelInput.type        = 'text';
+  labelInput.className   = 'label-edit-input';
+  labelInput.placeholder = tile.word;
+  labelInput.value       = currentLabel;
+  labelInput.title       = 'Testo mostrato sulla tessera al posto della parola originale';
+
+  const labelSaveBtn = document.createElement('button');
+  labelSaveBtn.className   = 'btn secondary small';
+  labelSaveBtn.textContent = '✓ Salva';
+  labelSaveBtn.addEventListener('click', () => {
+    const newLabel = labelInput.value.trim();
+    const wordKey  = tile.word.toUpperCase();
+    if (newLabel && newLabel !== tile.word) {
+      customLabels[wordKey] = newLabel;
+    } else {
+      delete customLabels[wordKey];
+    }
+    saveLabels(customLabels);
+    scheduleDriveSync();
+    renderPages();
+    showStatus(`✏️ Etichetta di "${tile.word}" aggiornata.`, 'success');
+    closeModal();
+  });
+
+  const labelResetBtn = document.createElement('button');
+  labelResetBtn.className   = 'btn small';
+  labelResetBtn.textContent = '↩';
+  labelResetBtn.title       = 'Ripristina testo originale';
+  labelResetBtn.disabled    = !currentLabel;
+  labelResetBtn.addEventListener('click', () => {
+    delete customLabels[tile.word.toUpperCase()];
+    saveLabels(customLabels);
+    scheduleDriveSync();
+    renderPages();
+    closeModal();
+  });
+
+  labelRow.appendChild(labelInput);
+  labelRow.appendChild(labelSaveBtn);
+  labelRow.appendChild(labelResetBtn);
+  labelSection.appendChild(labelRow);
+  modalAlts.appendChild(labelSection);
+
   // ── Sezione immagine personalizzata (SEMPRE visibile) ────────
   const customSection = document.createElement('div');
   customSection.className = 'custom-upload-section';
@@ -610,7 +683,7 @@ async function openModal(tile) {
       <img src="${customDataURL}" alt="Immagine personalizzata"
            style="width:80px;height:80px;object-fit:contain;border:2px solid #22c55e;border-radius:8px;">
       <span>Immagine personalizzata attiva</span>
-      <button class="btn secondary small" id="btn-remove-custom">✕ Rimuovi</button>
+      <button class="btn secondary small" id="btn-remove-custom">↩ Ripristina immagine ARASAAC</button>
     `;
     currentCustom.querySelector('#btn-remove-custom').addEventListener('click', () => {
       customImages = removeCustomImage(customImages, tile.word);
@@ -730,11 +803,13 @@ async function handleImportDict(e) {
   if (!file) return;
 
   try {
-    const { dict, imgs } = await importAll(file);
+    const { dict, imgs, labels } = await importAll(file);
     dictionary   = { ...dictionary, ...dict };
     customImages = { ...customImages, ...imgs };
+    customLabels = { ...customLabels, ...labels };
     saveDictionary(dictionary);
     saveCustomImages(customImages);
+    saveLabels(customLabels);
     const nd = Object.keys(dict).length;
     const ni = Object.keys(imgs).length;
     const msg = ni > 0
@@ -852,7 +927,7 @@ async function generatePDF() {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(FONT_SIZE);
         doc.text(
-          tile.word,
+          customLabels[tile.word.toUpperCase()] || tile.word,
           x + cell / 2,
           y + cell - 1.5,
           { align: 'center', maxWidth: cell - 2 }
@@ -896,6 +971,7 @@ function initStudentSelector() {
     setCurrentStudent(name);
     dictionary   = loadDictionary();
     customImages = loadCustomImagesForStudent(name);
+    customLabels = loadLabelsForStudent(name);
 
     // Se Drive connesso, carica dizionario dal Drive per questo alunno
     if (isDriveConnected()) {
@@ -991,6 +1067,10 @@ function saveCustomImagesForStudent(studentName, imgs) {
   localStorage.setItem(key, JSON.stringify(imgs));
 }
 
+function saveLabels(lbls) {
+  saveLabelsForStudent(getCurrentStudent(), lbls);
+}
+
 // ── Sync lista alunni da Drive (aggiunge alunni trovati su Drive) ─
 async function syncStudentListFromDrive() {
   if (!isDriveConnected()) return;
@@ -1052,7 +1132,7 @@ function scheduleDriveSync() {
   clearTimeout(_driveSaveTimer);
   _driveSaveTimer = setTimeout(async () => {
     const studentName = getCurrentStudent();
-    await saveStudentToDrive(studentName, dictionary, customImages);
+    await saveStudentToDrive(studentName, dictionary, customImages, customLabels);
   }, 1500); // aspetta 1.5s dopo l'ultima modifica prima di salvare
 }
 
