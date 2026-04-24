@@ -489,6 +489,7 @@ footer a:hover { text-decoration: underline; }
 
 /* ── SEZIONE MODIFICA ETICHETTA NEL MODAL ──────────────────────── */
 .label-edit-section {
+  grid-column: 1 / -1;   /* span tutta la larghezza della alternatives-grid */
   margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 2px dashed #e2e8f0;
@@ -526,6 +527,7 @@ footer a:hover { text-decoration: underline; }
 
 /* ── UPLOAD IMMAGINE CUSTOM NEL MODAL ─────────────────────────── */
 .custom-upload-section {
+  grid-column: 1 / -1;   /* span tutta la larghezza della alternatives-grid */
   margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 2px dashed #e2e8f0;
@@ -564,6 +566,7 @@ footer a:hover { text-decoration: underline; }
 }
 
 .modal-divider {
+  grid-column: 1 / -1;   /* span tutta la larghezza della alternatives-grid */
   text-align: center;
   margin: 0.75rem 0;
   position: relative;
