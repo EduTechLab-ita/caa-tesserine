@@ -869,7 +869,6 @@ async function generatePDF() {
   const PAGE_H  = isLandscape ? 210 : 297;   // ⚙️ altezza pagina
   const MARGIN  = 8;                          // ⚙️ margine esterno in mm
   const GAP     = 2;                          // ⚙️ spazio tra tessere in mm
-  const TEXT_H  = 6;                          // ⚙️ altezza zona testo in mm
   const IMG_PAD = 1;                          // ⚙️ padding interno immagine in mm
 
   const availW  = PAGE_W - 2 * MARGIN;
@@ -877,10 +876,14 @@ async function generatePDF() {
   const cellW   = (availW - (cols - 1) * GAP) / cols;
   const cellH   = (availH - (rows - 1) * GAP) / rows;
   const cell    = Math.min(cellW, cellH);
-  const imgSize = cell - TEXT_H - IMG_PAD * 2;
 
-  // ── Font adattivo: scala il testo alla dimensione della tessera ─
-  const FONT_SIZE = Math.max(4, Math.min(9, Math.round(cell * 0.28)));
+  // ── Font e zona testo adattativi alla dimensione della tessera ──
+  const FONT_SIZE = Math.max(4, Math.min(14, Math.round(cell * 0.30)));
+  const TEXT_H    = Math.max(5, Math.min(10, Math.round(cell * 0.20)));
+
+  const imgSize = cell - TEXT_H - IMG_PAD * 2;
+  // ── Offset X centrato per l'immagine all'interno della tessera ─
+  const imgX    = (cell - imgSize) / 2;
 
   // ── Layout frase-aware (condiviso con il preview) ─────────────
   const layout    = computeLayout(tiles, cols, rows);
@@ -906,21 +909,21 @@ async function generatePDF() {
         doc.setLineWidth(0.3);
         doc.roundedRect(x, y, cell, cell, 1, 1, 'S');
 
-        // ── Immagine ──────────────────────────────────────────
+        // ── Immagine (centrata orizzontalmente nella tessera) ──
         if (tile.dataURL && tile.dataURL.startsWith('data:')) {
           try {
             doc.addImage(
               tile.dataURL, 'PNG',
-              x + IMG_PAD, y + IMG_PAD,
+              x + imgX, y + IMG_PAD,
               imgSize, imgSize,
               undefined, 'FAST'
             );
           } catch (e) {
             console.warn('[PDF] addImage fallito per', tile.word, e.message);
-            drawNoImage(doc, x, y, cell, imgSize, IMG_PAD);
+            drawNoImage(doc, x, y, cell, imgSize, imgX);
           }
         } else {
-          drawNoImage(doc, x, y, cell, imgSize, IMG_PAD);
+          drawNoImage(doc, x, y, cell, imgSize, imgX);
         }
 
         // ── Linea separatrice immagine / testo ────────────────
@@ -928,7 +931,7 @@ async function generatePDF() {
         doc.setDrawColor(220, 220, 220);
         doc.line(x + 1, sepY, x + cell - 1, sepY);
 
-        // ── Testo parola ──────────────────────────────────────
+        // ── Testo parola (centrato, font adattivo) ────────────
         doc.setTextColor(0, 0, 0);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(FONT_SIZE);
@@ -959,10 +962,11 @@ async function generatePDF() {
 }
 
 /** Disegna un segnaposto testuale quando l'immagine non è disponibile. */
-function drawNoImage(doc, x, y, cell, imgSize, pad) {
+function drawNoImage(doc, x, y, cell, imgSize, imgX) {
   doc.setFontSize(16);
   doc.setTextColor(210, 210, 210);
-  doc.text('?', x + cell / 2, y + pad + imgSize / 2 + 3, { align: 'center' });
+  // centrato orizzontalmente, verticalmente al centro dell'area immagine
+  doc.text('?', x + cell / 2, y + 1 + imgSize / 2 + 3, { align: 'center' });
   doc.setTextColor(0, 0, 0);
 }
 
