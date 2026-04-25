@@ -41,7 +41,7 @@ let tiles          = [];
 let lemmaLog       = {};
 let customImages  = loadCustomImagesForStudent(getCurrentStudent());
 let customLabels  = loadLabelsForStudent(getCurrentStudent());
-let currentOptions = { cols: 4, rows: 5, tileSize: 45 };
+let currentOptions = { cols: 4, rows: 5, tileSize: 45, orientation: 'portrait' };
 
 // ── Riferimenti DOM ────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -52,6 +52,7 @@ const txtInput       = $('txt-input');
 const selCols        = $('sel-cols');
 const selRows        = $('sel-rows');
 const selSize        = $('sel-size');
+const selOrient      = $('sel-orient');
 const chkStop        = $('chk-stopwords');
 const btnGenerate    = $('btn-generate');
 const btnPrintVocab  = $('btn-print-vocab');
@@ -357,9 +358,10 @@ async function handleGenerate() {
 
   // ── Leggi opzioni ────────────────────────────────────────────
   currentOptions = {
-    cols:     parseInt(selCols.value),
-    rows:     parseInt(selRows.value),
-    tileSize: parseInt(selSize.value),
+    cols:        parseInt(selCols.value),
+    rows:        parseInt(selRows.value),
+    tileSize:    parseInt(selSize.value),
+    orientation: selOrient.value,
   };
 
   renderPages();
@@ -394,9 +396,10 @@ function handlePrintVocab() {
   }
 
   currentOptions = {
-    cols:     parseInt(selCols.value),
-    rows:     parseInt(selRows.value),
-    tileSize: parseInt(selSize.value),
+    cols:        parseInt(selCols.value),
+    rows:        parseInt(selRows.value),
+    tileSize:    parseInt(selSize.value),
+    orientation: selOrient.value,
   };
 
   lemmaLog = {};
@@ -857,30 +860,33 @@ async function generatePDF() {
     throw new Error('Libreria jsPDF non caricata. Verifica la connessione Internet.');
   }
 
-  const { cols, rows } = currentOptions;
-  const { jsPDF }      = window.jspdf;
+  const { cols, rows, orientation } = currentOptions;
+  const { jsPDF }                   = window.jspdf;
 
-  // ── Misure A4 in mm ──────────────────────────────────────────
-  const PAGE_W  = 210;   // ⚙️ larghezza A4
-  const PAGE_H  = 297;   // ⚙️ altezza A4
-  const MARGIN  = 8;     // ⚙️ margine esterno in mm
-  const GAP     = 2;     // ⚙️ spazio tra tessere in mm
-  const TEXT_H  = 6;     // ⚙️ altezza zona testo in mm
-  const IMG_PAD = 1;     // ⚙️ padding interno immagine in mm
-  const FONT_SIZE = 9;   // ⚙️ dimensione font parola
+  // ── Misure A4 in mm (adattate all'orientamento) ───────────────
+  const isLandscape = orientation === 'landscape';
+  const PAGE_W  = isLandscape ? 297 : 210;   // ⚙️ larghezza pagina
+  const PAGE_H  = isLandscape ? 210 : 297;   // ⚙️ altezza pagina
+  const MARGIN  = 8;                          // ⚙️ margine esterno in mm
+  const GAP     = 2;                          // ⚙️ spazio tra tessere in mm
+  const TEXT_H  = 6;                          // ⚙️ altezza zona testo in mm
+  const IMG_PAD = 1;                          // ⚙️ padding interno immagine in mm
 
   const availW  = PAGE_W - 2 * MARGIN;
-  const availH  = PAGE_H - 2 * MARGIN;
+  const availH  = PAGE_H - 2 * MARGIN - 5;   // -5mm per nota licenza in fondo
   const cellW   = (availW - (cols - 1) * GAP) / cols;
   const cellH   = (availH - (rows - 1) * GAP) / rows;
   const cell    = Math.min(cellW, cellH);
   const imgSize = cell - TEXT_H - IMG_PAD * 2;
 
+  // ── Font adattivo: scala il testo alla dimensione della tessera ─
+  const FONT_SIZE = Math.max(4, Math.min(9, Math.round(cell * 0.28)));
+
   // ── Layout frase-aware (condiviso con il preview) ─────────────
   const layout    = computeLayout(tiles, cols, rows);
   const pageCount = layout.length;
 
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const doc = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(FONT_SIZE);
 
