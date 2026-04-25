@@ -931,16 +931,26 @@ async function generatePDF() {
         doc.setDrawColor(220, 220, 220);
         doc.line(x + 1, sepY, x + cell - 1, sepY);
 
-        // ── Testo parola (centrato, font adattivo) ────────────
+        // ── Testo parola: centrato V/H nella zona sotto la linea ─
         doc.setTextColor(0, 0, 0);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(FONT_SIZE);
-        doc.text(
-          customLabels[tile.word.toUpperCase()] || tile.word,
-          x + cell / 2,
-          y + cell - 1.5,
-          { align: 'center', maxWidth: cell - 2 }
-        );
+
+        const label   = customLabels[tile.word.toUpperCase()] || tile.word;
+        const maxW    = cell - 2;
+        const lines   = doc.splitTextToSize(label, maxW);
+        // altezza di una riga in mm (1pt = 0.3528mm, interlinea ×1.15)
+        const lineH   = FONT_SIZE * 0.3528 * 1.15;
+        const totalH  = lines.length * lineH;
+        // zona testo: da sepY+1 a y+cell-1
+        const zoneTop = sepY + 1;
+        const zoneH   = (y + cell - 1) - zoneTop;
+        // baseline della prima riga centrata verticalmente nella zona
+        const startY  = zoneTop + (zoneH - totalH) / 2 + lineH * 0.75;
+
+        lines.forEach((line, i) => {
+          doc.text(line, x + cell / 2, startY + i * lineH, { align: 'center' });
+        });
       });
     });
   }
