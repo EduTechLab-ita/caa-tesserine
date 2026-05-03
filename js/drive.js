@@ -60,7 +60,7 @@ export function updateDriveButton(state) {
     label.textContent = 'Drive ⚠️';
   } else if (driveState.enabled && driveState.accessToken) {
     btn.classList.add('connected');
-    label.textContent = 'Drive ✓';
+    label.textContent = driveState.userEmail ? driveState.userEmail.split('@')[0] : 'Drive ✓';
   } else {
     label.textContent = 'Drive';
   }
